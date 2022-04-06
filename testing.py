@@ -6,6 +6,7 @@ from pprint import pprint
 from pydoc import text
 import string
 from tkinter.messagebox import RETRY
+from typing import List
 from unicodedata import decimal
 from db import BotDB
 import time
@@ -14,35 +15,87 @@ import random
 import re
 import emoji
 import datetime
+# from all_function import *
 
-
+id_user = 474701274
 BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
+def isfloat(num):
+    if num.isdigit():
+        return False
+    else:
+        try:
+            float(num)
+            return True
+        except:
+            return False
 
-def delete_header_2dot_data(table, key, where, meaning, name_header):
-    try:
-        get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
-        l: list = get_data.split(',')
-        ind = l[0].split(':').index(name_header)
-    except Exception as e:
-        return print('Ошибка!\nФункция: delete_header_2dot_data') 
+
+def parse_2dot_data(table, key, where, meaning) -> List[list]: 
     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
-    l: list = get_data.split(',')
-    l_new = []
-    ind = l[0].split(':').index(name_header)
-    _: list = l[0].split(':')
-    _.pop(ind)
-    l_new.append(':'.join(_))
-    for i in l[1:]:
-        i: list = i.split(':')
-        i.pop(ind)
-        _ = ':'.join(i)
-        l_new.append(_)
-    # BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
-    return ','.join(l_new)
+    l = get_data.split(',')
+    l1 = []
+    l2 = []
+    for i in l:
+        for x in i.split(':'):
+            if x.isdigit() or isfloat(x):
+                x = float(x) if isfloat(x) else int(x)
+            l1.append(x)
+        l2.append(l1)
+        l1 = []
+    return l2
+
+
+def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_data: str = 'id', meaning_data: str = '0'):
+    try:
+        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        ind = parse[0].index(where_data)
+        ind_add = parse[0].index(add_data)
+    except Exception as e:
+        return print('Ошибка!\nФункция: add_2dot_data') 
+    s = ''
+    for i in parse[1:]:
+        if str(i[ind]) == meaning_data:
+            i[ind_add] = round(i[ind_add] + add, 2)
+        s += ',' + ':'.join(list(map(lambda x: str(x))))
+    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
+
+print(add_2dot_data(key=f'quantity_comp', where='id_company', meaning=id_user, table='dev_software', add=12, where_data='lvl', meaning_data='1', add_data='lvl'))
+
+
+
+
+# l = [{
+#         'description': get_text(f'description_comp', format=False),
+#         'quantity': shell_money(get_2dot_data(key=f'quantity_comp', where='id_company', meaning=id_user, table='dev_software', where_data='lvl', meaning_data='1', get_data='quantity')),
+#         'cost': shell_money(BotDB.vCollector(where='name', meaning=f'cost_comp_1', table='value_it')),
+#         'percent': shell_money(BotDB.vCollector(where='name', meaning=f'percent_comp_1', table='value_it'))
+#     }]
+# pprint(l)
+
+# def delete_header_2dot_data(table, key, where, meaning, name_header):
+#     try:
+#         get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+#         l: list = get_data.split(',')
+#         ind = l[0].split(':').index(name_header)
+#     except Exception as e:
+#         return print('Ошибка!\nФункция: delete_header_2dot_data') 
+#     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+#     l: list = get_data.split(',')
+#     l_new = []
+#     ind = l[0].split(':').index(name_header)
+#     _: list = l[0].split(':')
+#     _.pop(ind)
+#     l_new.append(':'.join(_))
+#     for i in l[1:]:
+#         i = i.split(':')
+#         i.pop(ind)
+#         _ = ':'.join(i)
+#         l_new.append(_)
+#     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
     
 
-delete_header_2dot_data(table='dev_software', key='quantity_office_5', where='id_company', meaning=474701274, name_header='idd')
+# delete_header_2dot_data(table='dev_software', key='quantity_office_5', where='id_company', meaning=474701274, name_header='idd')
 
 
 # def add_header_2dot_data(table, key, where, meaning, name_header):
@@ -138,15 +191,6 @@ delete_header_2dot_data(table='dev_software', key='quantity_office_5', where='id
 # print(create_2dot_data(['one', 'two', 'three', 'four'], ['5','6','7','8']))
 
 
-def isfloat(num):
-    if num.isdigit():
-        return False
-    else:
-        try:
-            float(num)
-            return True
-        except:
-            return False
 
 # def add_2dot_data(add, where_data = 0, meaning_data = '0', add_index=0):
 #     # get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
@@ -163,19 +207,6 @@ def isfloat(num):
 
 # print(add_2dot_data(-2, where_data=0, meaning_data='1', add_index=1))      
 
-# def parse_2dot_data(table, key, where, meaning):
-#     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
-#     l = get_data.split(',')
-#     l1 = []
-#     l2 = []
-#     for i in l:
-#         for x in i.split(':'):
-#             if x.isdigit() or isfloat(x):
-#                 x = float(x) if isfloat(x) else int(x)
-#             l1.append(x)
-#         l2.append(l1)
-#         l1 = []
-#     return l2
 
 # print(parse_2dot_data(key=f'quantity_office_1', where='id_company', meaning=474701274, table='dev_software'))
 

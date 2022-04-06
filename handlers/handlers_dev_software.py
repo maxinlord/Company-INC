@@ -659,7 +659,7 @@ async def device_item(call: CallbackQuery, state: FSMContext):
     device_item = call.data.split(':')[1]
     l = [{
             'description': get_text(f'description_{device_item}_1', format=False),
-            'quantity': shell_money(BotDB.get(key=f'quantity_{device_item}_1', where='id_company', meaning=call.from_user.id, table='dev_software')),
+            'quantity': shell_money(get_2dot_data(key=f'quantity_{device_item}', where='id_company', meaning=call.from_user.id, table='dev_software', where_data='lvl', meaning_data='1', get_data='quantity')),
             'cost': shell_money(BotDB.vCollector(where='name', meaning=f'cost_{device_item}_1', table='value_it')),
             'percent': shell_money(BotDB.vCollector(where='name', meaning=f'percent_{device_item}_1', table='value_it'))
         }]
@@ -681,7 +681,7 @@ async def device_left(call: CallbackQuery, state: FSMContext):
     while y:
         l.append({
             'description': get_text(f'description_{device_item}_{i}', format=False),
-            'quantity': shell_money(BotDB.get(key=f'quantity_{device_item}_{i}', where='id_company', meaning=call.from_user.id, table='dev_software')),
+            'quantity': shell_money(get_2dot_data(key=f'quantity_{device_item}', where='id_company', meaning=call.from_user.id, table='dev_software', where_data='lvl', meaning_data=i, get_data='quantity')),
             'cost': shell_money(BotDB.vCollector(where='name', meaning=f'cost_{device_item}_{i}', table='value_it')),
             'percent': shell_money(BotDB.vCollector(where='name', meaning=f'percent_{device_item}_{i}', table='value_it'))
         })
@@ -711,7 +711,7 @@ async def device_right(call: CallbackQuery, state: FSMContext):
     while y:
         l.append({
             'description': get_text(f'description_{device_item}_{i}', format=False),
-            'quantity': shell_money(BotDB.get(key=f'quantity_{device_item}_{i}', where='id_company', meaning=call.from_user.id, table='dev_software')),
+            'quantity': shell_money(get_2dot_data(key=f'quantity_{device_item}', where='id_company', meaning=call.from_user.id, table='dev_software', where_data='lvl', meaning_data=i, get_data='quantity')),
             'cost': shell_money(BotDB.vCollector(where='name', meaning=f'cost_{device_item}_{i}', table='value_it')),
             'percent': shell_money(BotDB.vCollector(where='name', meaning=f'percent_{device_item}_{i}', table='value_it'))
         })
@@ -767,7 +767,7 @@ async def buy_device2(message: Message, state: FSMContext):
                 device = data.get('device')
                 pay = round(float(cleannum(dic[index-1]['cost'])) * int(cleannums), 2)
                 BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=-pay)
-                BotDB.add(key=f'quantity_{device}_{index}', where='id_company', meaning=message.from_user.id, table='dev_software', num=int(cleannums))  
+                add_2dot_data(key=f'quantity_{device}', where='id_company', meaning=message.from_user.id, table='dev_software', add=int(cleannums), where_data='lvl', meaning_data=str(index), add_data='quantity')  
                 await message.answer(get_text('buy_device2.3', format=False), reply_markup=keyboard_default.company_dev_software())
                 await company_dev_software.Q1.set()
             else:
@@ -812,7 +812,7 @@ async def sell_device2(message: Message, state: FSMContext):
             percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_device', table='value_it')
             pay = round(float(cleannum(dic[index-1]['cost'])) * int(cleannums) * percent_back, 2)
             BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=pay)
-            BotDB.add(key=f'quantity_{device}_{index}', where='id_company', meaning=message.from_user.id, table='dev_software', num=-int(cleannums))  
+            add_2dot_data(key=f'quantity_{device}', where='id_company', meaning=message.from_user.id, table='dev_software', add=-int(cleannums), where_data='lvl', meaning_data=str(index), add_data='quantity')  
             await message.answer(get_text('sell_device2.3', format=False), reply_markup=keyboard_default.company_dev_software())
             await company_dev_software.Q1.set()
         else:

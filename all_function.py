@@ -2,6 +2,7 @@ import datetime
 import random
 import string
 import types
+from typing import List
 from db import BotDB
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher import FSMContext
@@ -198,17 +199,15 @@ def quantity_devices(id_company):
     devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
     while y:
         device = devices[ind]
-        q_devices += BotDB.get(key=f'quantity_{device}_{i}', where='id_company', meaning=id_company, table='dev_software')
+        data = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')
+        ind_q = data[0].index('quantity')
+        for i in data[1:]:
+            q_devices += i[ind_q]
         try:
-            i += 1
-            BotDB.vCollector(where='name', meaning=f'cost_{device}_{i}', table='value_it')
+            ind += 1
+            device = devices[ind]
         except:
-            try:
-                i = 1
-                ind += 1
-                device = devices[ind]
-            except:    
-                y = False
+            y = False
     return q_devices
 
 # #########################################
@@ -263,7 +262,7 @@ def create_2dot_data(table, key, where, meaning, headers=[], d=[]):
     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=adding.strip(','))
 
 
-def parse_2dot_data(table, key, where, meaning):
+def parse_2dot_data(table, key, where, meaning) -> List[list]: 
     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
     l = get_data.split(',')
     l1 = []
@@ -277,11 +276,30 @@ def parse_2dot_data(table, key, where, meaning):
         l1 = []
     return l2
 
-def get_2dot_data(table, key, where, meaning, where_data = 0, get_index = 0, meaning_data = '0'):
-    parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+def get_2dot_data(table, key, where, meaning, where_data: str = 'id', get_data: str = 'id', meaning_data: str = '0'):
+    try:
+        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        ind = parse[0].index(where_data)
+        ind_get = parse[0].index(get_data)
+    except Exception as e:
+        return print('Ошибка!\nФункция: get_2dot_data') 
     for i in parse[1:]:
-        if i[where_data] == int(meaning_data):
-            return i[get_index]
+        if i[ind] == int(meaning_data):
+            return i[ind_get]
+
+def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_data: str = 'id', meaning_data: str = '0'):
+    try:
+        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        ind = parse[0].index(where_data)
+        ind_add = parse[0].index(add_data)
+    except Exception as e:
+        return print('Ошибка!\nФункция: add_2dot_data') 
+    s = ''
+    for i in parse[1:]:
+        if str(i[ind]) == meaning_data:
+            i[ind_add] = round(i[ind_add] + add, 2) if isfloat(i[ind_add]) else i[ind_add] + add
+        s += ',' + ':'.join(list(map(lambda x: str(x))))
+    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
 
 def delete_2dot_data(table, key, where, meaning, unique_value_data):
     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
@@ -301,18 +319,6 @@ def update_item_2dot_data(table, key, where, meaning, item, where_data = 0, mean
         i = i.split(':')
         if i[where_data] == meaning_data:
             i[change_index] = item
-        s += ',' + ':'.join(i)
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
-
-
-def add_2dot_data(table, key, where, meaning, add, where_data = 0, meaning_data = '0', add_index=0):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
-    l = get_data.split(',')
-    s = ''
-    for i in l:
-        i = i.split(':')
-        if i[where_data] == meaning_data:
-            i[add_index] = str(round(float(i[add_index]) + add, 2)) if isfloat(i[add_index]) else str(int(i[add_index]) + add)
         s += ',' + ':'.join(i)
     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
 
