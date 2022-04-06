@@ -19,52 +19,92 @@ import datetime
 BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
 
+def delete_header_2dot_data(table, key, where, meaning, name_header):
+    try:
+        get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+        l: list = get_data.split(',')
+        ind = l[0].split(':').index(name_header)
+    except Exception as e:
+        return print('Ошибка!\nФункция: delete_header_2dot_data') 
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    l: list = get_data.split(',')
+    l_new = []
+    ind = l[0].split(':').index(name_header)
+    _: list = l[0].split(':')
+    _.pop(ind)
+    l_new.append(':'.join(_))
+    for i in l[1:]:
+        i: list = i.split(':')
+        i.pop(ind)
+        _ = ':'.join(i)
+        l_new.append(_)
+    # BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
+    return ','.join(l_new)
+    
 
-def count_percent_device(id_company):
-    devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
-    q_dev_1 = BotDB.get(key=f'quantity_dev_1', where='id_company', meaning=id_company, table='dev_software')
-    q_dev_2 = BotDB.get(key=f'quantity_dev_2', where='id_company', meaning=id_company, table='dev_software')
-    q_dev_3 = BotDB.get(key=f'quantity_dev_3', where='id_company', meaning=id_company, table='dev_software')
-    i = 1
-    ind = 0
-    l = []
-    y = True
-    while y:
-        device = devices[ind]
-        q_device = BotDB.get(key=f'quantity_{device}_{i}', where='id_company', meaning=id_company, table='dev_software')
-        name_device = BotDB.get(key=f'name', where='name', meaning=f'percent_{device}_{i}', table='value_it')
-        p_device = BotDB.vCollector(where='name', meaning=f'percent_{device}_{i}', table='value_it')
-        devs = [q_dev_1, q_dev_2, q_dev_3]
-        for dev in enumerate(devs):
-                if q_device == 0:
-                    break 
-                elif dev[1] == 0:
-                    continue    
-                elif q_device <= dev[1]:
-                    if i > 1:
-                        devs[devs.index(dev[1])] = dev[1] - q_device
-                    l.append([f'{dev[0]}', q_device, p_device, name_device])
-                    break
-                else:
-                    if i > 1:
-                        devs[devs.index(dev[1])] = 0
-                    l.append([f'{dev[0]}', dev[1], p_device, name_device]) 
-                    q_device -= dev[1]          
-        try:
-            i += 1
-            BotDB.vCollector(where='name', meaning=f'cost_{device}_{i}', table='value_it')
-        except:
-            try:
-                i = 1
-                ind += 1
-                device = devices[ind]
-            except:    
-                y = False
+delete_header_2dot_data(table='dev_software', key='quantity_office_5', where='id_company', meaning=474701274, name_header='idd')
+
+
+# def add_header_2dot_data(table, key, where, meaning, name_header):
+#     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+#     l = get_data.split(',')
+#     l_new = []
+#     l_new.append(l[0] + ':' + name_header)
+#     for i in l[1:]:
+#         l_new.append(i + ':0')
+#     # BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
+#     return ','.join(l_new)
+
+# print(add_header_2dot_data(table='dev_software', key='quantity_office_5', where='id_company', meaning=474701274, name_header='id_company'))
+
+
+
+
+# def count_percent_device(id_company):
+#     devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
+#     q_dev_1 = BotDB.get(key=f'quantity_dev_1', where='id_company', meaning=id_company, table='dev_software')
+#     q_dev_2 = BotDB.get(key=f'quantity_dev_2', where='id_company', meaning=id_company, table='dev_software')
+#     q_dev_3 = BotDB.get(key=f'quantity_dev_3', where='id_company', meaning=id_company, table='dev_software')
+#     i = 1
+#     ind = 0
+#     l = []
+#     y = True
+#     while y:
+#         device = devices[ind]
+#         q_device = BotDB.get(key=f'quantity_{device}_{i}', where='id_company', meaning=id_company, table='dev_software')
+#         name_device = BotDB.get(key=f'name', where='name', meaning=f'percent_{device}_{i}', table='value_it')
+#         p_device = BotDB.vCollector(where='name', meaning=f'percent_{device}_{i}', table='value_it')
+#         devs = [q_dev_1, q_dev_2, q_dev_3]
+#         for dev in enumerate(devs):
+#                 if q_device == 0:
+#                     break 
+#                 elif dev[1] == 0:
+#                     continue    
+#                 elif q_device <= dev[1]:
+#                     if i > 1:
+#                         devs[devs.index(dev[1])] = dev[1] - q_device
+#                     l.append([f'{dev[0]}', q_device, p_device, name_device])
+#                     break
+#                 else:
+#                     if i > 1:
+#                         devs[devs.index(dev[1])] = 0
+#                     l.append([f'{dev[0]}', dev[1], p_device, name_device]) 
+#                     q_device -= dev[1]          
+#         try:
+#             i += 1
+#             BotDB.vCollector(where='name', meaning=f'cost_{device}_{i}', table='value_it')
+#         except:
+#             try:
+#                 i = 1
+#                 ind += 1
+#                 device = devices[ind]
+#             except:    
+#                 y = False
     
                 
-    return sorted(l)
+#     return sorted(l)
 
-pprint(count_percent_device(474701274))
+# pprint(count_percent_device(474701274))
 
 # @dp.callback_query_handler(user_id=admin_id, state=Mailing.Language)
 # async def mailing_start(call: types.CallbackQuery, state: FSMContext):

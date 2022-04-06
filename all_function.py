@@ -287,7 +287,7 @@ def delete_2dot_data(table, key, where, meaning, unique_value_data):
     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
     l = get_data.split(',')
     s = ''
-    for i in l:
+    for i in l[1:]:
         if unique_value_data not in i:
             s += ',' + i
     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
@@ -315,6 +315,38 @@ def add_2dot_data(table, key, where, meaning, add, where_data = 0, meaning_data 
             i[add_index] = str(round(float(i[add_index]) + add, 2)) if isfloat(i[add_index]) else str(int(i[add_index]) + add)
         s += ',' + ':'.join(i)
     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
+
+
+def add_header_2dot_data(table, key, where, meaning, name_new_header):
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    l = get_data.split(',')
+    l_new = []
+    l_new.append(l[0] + ':' + name_new_header)
+    for i in l[1:]:
+        l_new.append(i + ':0')
+    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
+
+
+def delete_header_2dot_data(table, key, where, meaning, name_header):
+    try:
+        get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+        l: list = get_data.split(',')
+        ind = l[0].split(':').index(name_header)
+    except Exception as e:
+        return print('Ошибка!\nФункция: delete_header_2dot_data') 
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    l: list = get_data.split(',')
+    l_new = []
+    ind = l[0].split(':').index(name_header)
+    _: list = l[0].split(':')
+    _.pop(ind)
+    l_new.append(':'.join(_))
+    for i in l[1:]:
+        i = i.split(':')
+        i.pop(ind)
+        _ = ':'.join(i)
+        l_new.append(_)
+    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
 
 # #########################################
 
