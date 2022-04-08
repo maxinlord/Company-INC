@@ -636,7 +636,8 @@ async def stoprent_office2(message: Message, state: FSMContext):
 @last_tap('-', state=True)
 async def device_menu(message: Message, state: FSMContext):
     d = {
-        'quantity_devices': quantity_devices(message.from_user.id)
+        'quantity_devices': quantity_devices(message.from_user.id),
+        'percents': count_percent_device(message.from_user.id)
         }
     await message.answer(get_text('device', format=True, d=d), reply_markup=keyboard_inline.device())
 
@@ -647,7 +648,8 @@ async def device_menu(message: Message, state: FSMContext):
 async def back_to_device(call: CallbackQuery, state: FSMContext):
     await call.answer(cache_time=0.5)
     d = {
-        'quantity_devices': quantity_devices(call.from_user.id)
+        'quantity_devices': quantity_devices(call.from_user.id),
+        'percents': count_percent_device(call.from_user.id)
         }
     await bot.edit_message_text(get_text('device', format=True, d=d),call.from_user.id, call.message.message_id, reply_markup=keyboard_inline.device())
 
@@ -685,8 +687,8 @@ async def device_left(call: CallbackQuery, state: FSMContext):
             'cost': shell_money(BotDB.vCollector(where='name', meaning=f'cost_{device_item}_{i}', table='value_it')),
             'percent': shell_money(BotDB.vCollector(where='name', meaning=f'percent_{device_item}_{i}', table='value_it'))
         })
-        i+=1
         try:
+            i+=1
             BotDB.vCollector(where='name', meaning=f'cost_{device_item}_{i}', table='value_it')
         except:
             y = False
@@ -787,7 +789,7 @@ async def sell_device1(call: CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         data['index'] = index
         data['device'] = device
-    if BotDB.get(key=f'quantity_{device}_{index}', where='id_company', meaning=call.from_user.id, table='dev_software') > 0:
+    if get_2dot_data(key=f'quantity_{device}', where='id_company', meaning=call.from_user.id, table='dev_software', where_data='lvl', meaning_data=str(index), get_data='quantity') > 0:
         await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
         await bot.send_message(call.from_user.id, get_text('sell_device1.1', format=False), reply_markup=keyboard_default.cancel())
         await company_dev_software.Q8.set()
@@ -808,7 +810,7 @@ async def sell_device2(message: Message, state: FSMContext):
         index = data.get('index')
         device = data.get('device')
         dic = data.get('l')
-        if BotDB.get(key=f'quantity_{device}_{index}', where='id_company', meaning=message.from_user.id, table='dev_software') >= int(cleannums):
+        if get_2dot_data(key=f'quantity_{device}', where='id_company', meaning=message.from_user.id, table='dev_software', where_data='lvl', meaning_data=str(index), get_data='quantity') >= int(cleannums):
             percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_device', table='value_it')
             pay = round(float(cleannum(dic[index-1]['cost'])) * int(cleannums) * percent_back, 2)
             BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=pay)

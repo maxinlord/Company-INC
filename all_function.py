@@ -210,6 +210,72 @@ def quantity_devices(id_company):
             y = False
     return q_devices
 
+def count_percent_device(id_company):
+    devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
+    bring_data = []
+    i = 1
+    ind = 0
+
+    y = True
+    while y:
+        device = devices[ind]
+        q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')
+        # name_device = BotDB.get(key=f'name', where='name', meaning=f'percent_{device}_{i}', table='value_it')
+        # p_device = BotDB.vCollector(where='name', meaning=f'percent_{device}_{i}', table='value_it')
+        d = {
+            'q_dev_1': BotDB.get(key=f'quantity_dev_1', where='id_company', meaning=id_company, table='dev_software'),
+            'q_dev_2': BotDB.get(key=f'quantity_dev_2', where='id_company', meaning=id_company, table='dev_software'),
+            'q_dev_3': BotDB.get(key=f'quantity_dev_3', where='id_company', meaning=id_company, table='dev_software'),
+            'q_device': q_device
+            }
+        l = [d['q_dev_1'],d['q_dev_2'],d['q_dev_3']]
+        for i in enumerate(q_device[1:], 1):
+            p_device = BotDB.vCollector(where='name', meaning=f'percent_{device}_{i[0]}', table='value_it')
+            name_device = BotDB.get(key=f'name', where='name', meaning=f'percent_{device}_{i[0]}', table='value_it')
+            if i[1][1] == 0:
+                continue
+            l = [d['q_dev_1'], d['q_dev_2'], d['q_dev_3']]
+            for x in enumerate(l, 1):
+                if x[1] == 0:
+                    continue
+                elif i[1][1] <=x[1]:
+                    d[f'q_dev_{x[0]}'] -= i[1][1]
+                    bring_data.append([f'dev_{x[0]}', i[1][1], p_device, name_device])
+                    break
+                else:
+                    bring_data.append([f'dev_{x[0]}', d[f'q_dev_{x[0]}'], p_device, name_device])
+                    d[f'q_dev_{x[0]}'] = 0
+                    i = ['заглушка', ['заглушка', i[1][1] - x[1]]]
+        try:
+            ind += 1
+            device = devices[ind]
+        except:
+            y = False
+    lst = []
+    bring_data1 = bring_data.copy()
+    bring_data2 = bring_data.copy()
+    for x in sorted(bring_data1):
+        percent = x[2]
+        for i in sorted(bring_data2):
+            if x == i:
+                # bring_data2.remove(i)
+                continue
+            elif x[0] == i[0] and x[3].split('_')[1] != i[3].split('_')[1]:
+                if x[1] < i[1]:
+                    i[1] = i[1] - x[1]
+                    percent += i[2] 
+                elif x[1] == i[1]:
+                    percent += i[2] 
+            else:
+                continue
+        if [x[0], x[1], round(percent, 2)] not in lst:
+            lst.append([x[0], x[1], round(percent, 2)])
+        else:
+            pass
+    # return sorted(lst)
+    return '\n'.join([f'{i}' for i in sorted(lst)])
+
+    
 # #########################################
 
 
@@ -294,12 +360,13 @@ def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_d
         ind_add = parse[0].index(add_data)
     except Exception as e:
         return print('Ошибка!\nФункция: add_2dot_data') 
-    s = ''
+    s = ':'.join(parse[0])
     for i in parse[1:]:
         if str(i[ind]) == meaning_data:
-            i[ind_add] = round(i[ind_add] + add, 2) if isfloat(i[ind_add]) else i[ind_add] + add
-        s += ',' + ':'.join(list(map(lambda x: str(x))))
+            i[ind_add] = round(i[ind_add] + add, 2) if isfloat(str(i[ind_add])) else i[ind_add] + add
+        s += ',' + ':'.join(list(map(lambda x: str(x), i)))
     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
+
 
 def delete_2dot_data(table, key, where, meaning, unique_value_data):
     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
