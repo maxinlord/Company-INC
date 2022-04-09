@@ -218,13 +218,16 @@ def create_mat_percents(id_company):
     devices_k = []
     while y:
         device = devices[ind]
-        q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')
+        q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')[1:]
         q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
-        for i in q_device[1:]:
+        for i in q_device:
             s = []
             true_q_device = i[1]
             if i[0] > 1:
-                s = [0]*q_device[q_device.index(i)-1][1] + s
+                u = 0
+                for t in range(1, i[0]):
+                    u += q_device[t-1][1] 
+                s = [0]*u + s
             elif i[1] == 0:
                 continue
             for j in q_devs:
@@ -250,7 +253,6 @@ def create_mat_percents(id_company):
     return devices_k
 
 
-
 def count_percent_device(device_k, id_company):
     q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
     dev_name = ['junior', 'middle', 'senior']
@@ -265,7 +267,7 @@ def count_percent_device(device_k, id_company):
     u = 0
     for i in enumerate(q_devs):
         slice = percents[u:i[1]+u]
-        for j in list(set(percents[u:i[1]+u])):
+        for j in sorted(list(set(percents[u:i[1]+u])), reverse=False):
             d = {
                 'dev': dev_name[i[0]],
                 'quantity_same_percent': slice.count(j),
@@ -274,10 +276,6 @@ def count_percent_device(device_k, id_company):
             text += get_text('template_string_count_percent_device', format=True, d=d)
         u += i[1]
     return text
-
-
-# #########################################
-
 
 # #########################################
 
