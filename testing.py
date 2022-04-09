@@ -3,7 +3,7 @@ from audioop import add
 from base64 import decode
 from copy import copy
 from curses.ascii import isascii, isdigit
-from pprint import pprint
+from pprint import pp, pprint
 from pydoc import text
 import string
 from tkinter.messagebox import RETRY
@@ -17,6 +17,7 @@ import re
 import emoji
 import datetime
 from all_function import *
+import numpy as np
 
 id_user = 474701274
 
@@ -136,6 +137,7 @@ def count_percent_device(id_company):
         for i in enumerate(q_device[1:], 1):
             p_device = BotDB.vCollector(where='name', meaning=f'percent_{device}_{i[0]}', table='value_it')
             name_device = BotDB.get(key=f'name', where='name', meaning=f'percent_{device}_{i[0]}', table='value_it')
+            lvl = i[0]
             if i[1][1] == 0:
                 continue
             l = [d['q_dev_1'], d['q_dev_2'], d['q_dev_3']]
@@ -144,10 +146,10 @@ def count_percent_device(id_company):
                     continue
                 elif i[1][1] <=x[1]:
                     d[f'q_dev_{x[0]}'] -= i[1][1]
-                    bring_data.append([f'dev_{x[0]}', i[1][1], p_device, name_device])
+                    bring_data.append([f'dev_{x[0]}', i[1][1], p_device, lvl])
                     break
                 else:
-                    bring_data.append([f'dev_{x[0]}', d[f'q_dev_{x[0]}'], p_device, name_device])
+                    bring_data.append([f'dev_{x[0]}', d[f'q_dev_{x[0]}'], p_device, lvl])
                     d[f'q_dev_{x[0]}'] = 0
                     i = ['заглушка', ['заглушка', i[1][1] - x[1]]]
         try:
@@ -155,31 +157,131 @@ def count_percent_device(id_company):
             device = devices[ind]
         except:
             y = False
-    lst = []
-    bring_data1 = bring_data.copy()
-    bring_data2 = bring_data.copy()
-    for x in sorted(bring_data1):
-        percent = x[2]
-        for i in sorted(bring_data2):
-            if x == i:
-                # bring_data2.remove(i)
-                continue
-            elif x[0] == i[0] and x[3].split('_')[1] != i[3].split('_')[1]:
-                if x[1] < i[1]:
-                    i[1] = i[1] - x[1]
-                    percent += i[2] 
-                elif x[1] == i[1]:
-                    percent += i[2] 
-            else:
-                continue
-        if [x[0], x[1], round(percent, 2)] not in lst:
-            lst.append([x[0], x[1], round(percent, 2)])
-        else:
-            pass
+    # pprint(bring_data)
+    # lst = []
+    # bring_data1 = bring_data.copy()
+    # bring_data2 = bring_data.copy()
+    # for x in sorted(bring_data1):
+    #     print (f'Начало интереации беру обьект {x}')
+    #     percent = x[2]
+    #     print(f'Базовый процент равен {percent}')
+    #     for i in sorted(bring_data2):
+    #         print(f'Начинаю сравнивать обьекты, беру обьект для сравнения {i}')
+    #         if x == i:
+    #             print('Два обьекта равны, поэтому иду дальше')
+    #             bring_data2.remove(i)
+    #             continue
+    #         elif x[0] == i[0] and x[3].split('_')[1] != i[3].split('_')[1]:
+    #             if x[1] < i[1]:
+    #                 percent += i[2] 
+    #                 print(f'{x[1]} < {i[1]} поэтому я получаю разницу {i[1] - x[1]} и процент {percent}')
+                    
+    #                 i[1] = i[1] - x[1]
+    #                 print(f'ПОЛУЧАЮ ИЗМЕНЕННЫЙ ОБЪЕКТ {i}')
+    #             elif x[1] == i[1]:
+    #                 percent += i[2]
+    #                 print(f'{x[1]} == {i[1]} поэтому я просто получаю процент {percent}')
+    #                 i[2] = percent
+    #         else:
+    #             print('Не одно утверждение не подошло, беру следующий обьект')
+    #             continue
+    #     if [x[0], x[1], round(percent, 2)] not in lst:
+    #         print(f'Обеькта {[x[0], x[1], round(percent, 2)]} нет в списке, добовляю')
+    #         lst.append([x[0], x[1], round(percent, 2)])
+    #     else:
+    #         print(f'Обькт {[x[0], x[1], round(percent, 2)]} есть в списке, пропускаю')
+    #         pass
 
-    return '\n'.join([f'{i}' for i in sorted(lst)])
+    # return '\n'.join([f'{i}' for i in sorted(lst)])
+    return sorted(bring_data)
 
-pprint(count_percent_device(474701274))
+def percent_get(bring_data):
+    pprint(bring_data)
+    for j in ['dev_1', 'dev_2', 'dev_3']:
+        l = []
+        for i in bring_data:
+            if i[0] == j:
+                l.append([i[3] for x in range(1, i[1]+1)])
+        pprint(l, width=100) 
+        print('\n')
+    
+
+# percent_get(count_percent_device(474701274))
+
+def count_percent_device2(id_company):
+    devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
+    bring_data = []
+    i = 1
+    ind = 0
+    y = True
+    devices_k = []
+    while y:
+        device = devices[ind]
+        q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')
+        q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
+        # print(q_device)
+        for i in q_device[1:]:
+            s = []
+            true_q_device = i[1]
+            if i[0] > 1:
+                s = [0]*q_device[q_device.index(i)-1][1] + s
+            elif i[1] == 0:
+                continue
+            for j in q_devs:
+                if j == 0:
+                    continue
+                elif i[1] >= j:
+                    s += [1]*j
+                    i[1] = i[1] - j
+                    q_devs[q_devs.index(j)] = 0
+                elif i[1] <= j:
+                    s += [1]*i[1]
+                    i[1] = 0
+                    q_devs[q_devs.index(j)] = j - i[1]
+                    s += [0]*(quantity_dev_company(id_company) - len(s))
+                    break
+            i[1] = true_q_device
+            devices_k.append([f'{device}_{i[0]}'] + s)
+        try:
+            ind += 1
+            device = devices[ind]
+        except:
+            y = False
+    return pprint(devices_k, width=300)
+
+
+
+def mat_plus(device_k, id_company):
+    q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
+    dev_name = ['junior', 'middle', 'senior']
+    percents = []
+    for i in range(1, quantity_dev_company(id_company)+1):
+        percent = 0
+        for x in range(len(device_k)):
+            if device_k[x][i] == 1:
+                # print(device_k[x][0])
+                percent += BotDB.vCollector(where='name', meaning=f'percent_{device_k[x][0]}', table='value_it') 
+        percents.append(round(percent, 2))
+    text = ''
+    u = 0
+    for i in enumerate(q_devs):
+        slice = percents[u:i[1]+u]
+        for j in list(set(percents[u:i[1]+u])):
+            text += f'{dev_name[i[0]]}({slice.count(j)}) {j*100}%\n'
+        u += i[1]
+    return text
+
+count_percent_device2(id_user)
+
+
+# def n():
+#     a = np.arange(200)
+#     a.shape = 4, 50
+#     # print(a)
+#     for i in a:
+#         print(i[0])
+
+# n()
 
 # @dp.callback_query_handler(user_id=admin_id, state=Mailing.Language)
 # async def mailing_start(call: types.CallbackQuery, state: FSMContext):

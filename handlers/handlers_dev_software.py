@@ -637,7 +637,7 @@ async def stoprent_office2(message: Message, state: FSMContext):
 async def device_menu(message: Message, state: FSMContext):
     d = {
         'quantity_devices': quantity_devices(message.from_user.id),
-        'percents': count_percent_device(message.from_user.id)
+        'percents': count_percent_device(create_mat_percents(message.from_user.id), message.from_user.id)
         }
     await message.answer(get_text('device', format=True, d=d), reply_markup=keyboard_inline.device())
 
@@ -649,7 +649,7 @@ async def back_to_device(call: CallbackQuery, state: FSMContext):
     await call.answer(cache_time=0.5)
     d = {
         'quantity_devices': quantity_devices(call.from_user.id),
-        'percents': count_percent_device(call.from_user.id)
+        'percents': count_percent_device(create_mat_percents(call.from_user.id), call.from_user.id)
         }
     await bot.edit_message_text(get_text('device', format=True, d=d),call.from_user.id, call.message.message_id, reply_markup=keyboard_inline.device())
 
