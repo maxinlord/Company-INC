@@ -1,4 +1,5 @@
 import abc
+from ast import Return
 from audioop import add
 from base64 import decode
 from copy import copy
@@ -6,10 +7,8 @@ from curses.ascii import isascii, isdigit
 from pprint import pp, pprint
 from pydoc import text
 import string
-from tkinter.messagebox import RETRY
 from typing import List
 from unicodedata import decimal
-from db import BotDB
 import time
 import math
 import random
@@ -21,6 +20,8 @@ import numpy as np
 
 id_user = 474701274
 
+i = DevSoftware(id_user)
+print(i.get_quantity_buy_offices(4))
 
 # def isfloat(num):
 #     if num.isdigit():
@@ -116,73 +117,73 @@ id_user = 474701274
 
 # percent_get(count_percent_device(474701274))
 
-def count_percent_device2(id_company):
-    devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
-    bring_data = []
-    i = 1
-    ind = 0
-    y = True
-    devices_k = []
-    while y:
-        device = devices[ind]
-        q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')[1:]
-        q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
-        # print(q_device)
-        for i in q_device:
-            s = []
-            true_q_device = i[1]
-            if i[0] > 1:
-                u = 0
-                for t in range(1, i[0]):
-                    u += q_device[t-1][1] 
-                s = [0]*u + s
-            elif i[1] == 0:
-                continue
-            for j in q_devs:
-                if j == 0:
-                    continue
-                elif i[1] >= j:
-                    s += [1]*j
-                    i[1] = i[1] - j
-                    q_devs[q_devs.index(j)] = 0
-                elif i[1] <= j:
-                    s += [1]*i[1]
-                    i[1] = 0
-                    q_devs[q_devs.index(j)] = j - i[1]
-                    s += [0]*(quantity_dev_company(id_company) - len(s))
-                    break
-            i[1] = true_q_device
-            devices_k.append([f'{device}_{i[0]}'] + s)
-        try:
-            ind += 1
-            device = devices[ind]
-        except:
-            y = False
-    return pprint(devices_k, width=300)
+# def count_percent_device2(id_company):
+#     devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
+#     bring_data = []
+#     i = 1
+#     ind = 0
+#     y = True
+#     devices_k = []
+#     while y:
+#         device = devices[ind]
+#         q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')[1:]
+#         q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
+#         # print(q_device)
+#         for i in q_device:
+#             s = []
+#             true_q_device = i[1]
+#             if i[0] > 1:
+#                 u = 0
+#                 for t in range(1, i[0]):
+#                     u += q_device[t-1][1] 
+#                 s = [0]*u + s
+#             elif i[1] == 0:
+#                 continue
+#             for j in q_devs:
+#                 if j == 0:
+#                     continue
+#                 elif i[1] >= j:
+#                     s += [1]*j
+#                     i[1] = i[1] - j
+#                     q_devs[q_devs.index(j)] = 0
+#                 elif i[1] <= j:
+#                     s += [1]*i[1]
+#                     i[1] = 0
+#                     q_devs[q_devs.index(j)] = j - i[1]
+#                     s += [0]*(quantity_dev_company(id_company) - len(s))
+#                     break
+#             i[1] = true_q_device
+#             devices_k.append([f'{device}_{i[0]}'] + s)
+#         try:
+#             ind += 1
+#             device = devices[ind]
+#         except:
+#             y = False
+#     return pprint(devices_k, width=300)
 
 
 
-def mat_plus(device_k, id_company):
-    q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
-    dev_name = ['junior', 'middle', 'senior']
-    percents = []
-    for i in range(1, quantity_dev_company(id_company)+1):
-        percent = 0
-        for x in range(len(device_k)):
-            if device_k[x][i] == 1:
-                # print(device_k[x][0])
-                percent += BotDB.vCollector(where='name', meaning=f'percent_{device_k[x][0]}', table='value_it') 
-        percents.append(round(percent, 2))
-    text = ''
-    u = 0
-    for i in enumerate(q_devs):
-        slice = percents[u:i[1]+u]
-        for j in list(set(percents[u:i[1]+u])):
-            text += f'{dev_name[i[0]]}({slice.count(j)}) {j*100}%\n'
-        u += i[1]
-    return text
+# def mat_plus(device_k, id_company):
+#     q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
+#     dev_name = ['junior', 'middle', 'senior']
+#     percents = []
+#     for i in range(1, quantity_dev_company(id_company)+1):
+#         percent = 0
+#         for x in range(len(device_k)):
+#             if device_k[x][i] == 1:
+#                 # print(device_k[x][0])
+#                 percent += BotDB.vCollector(where='name', meaning=f'percent_{device_k[x][0]}', table='value_it') 
+#         percents.append(round(percent, 2))
+#     text = ''
+#     u = 0
+#     for i in enumerate(q_devs):
+#         slice = percents[u:i[1]+u]
+#         for j in list(set(percents[u:i[1]+u])):
+#             text += f'{dev_name[i[0]]}({slice.count(j)}) {j*100}%\n'
+#         u += i[1]
+#     return text
 
-count_percent_device2(id_user)
+# count_percent_device2(id_user)
 
 
 # def n():

@@ -1,3 +1,4 @@
+from curses import use_default_colors
 import time
 import datetime
 from aiogram.types import ReplyKeyboardRemove
@@ -6,6 +7,7 @@ from aiogram.types import Message, ChatActions
 from aiogram.dispatcher import FSMContext
 from aiogram import types
 from bot import BotDB
+from db import User
 from dispatcher import bot, dp
 from keyboards.default import keyboard_default
 from keyboards.inline import keyboard_inline
@@ -40,12 +42,13 @@ async def create_app(message: Message, state: FSMContext):
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def first_app1(call: CallbackQuery, state: FSMContext):
-    date = BotDB.get(key='cd_time_app', where='id_company', meaning=call.from_user.id, table='dev_software')
+    user = User(call.from_user.id)
+    date = BotDB.get(key='cd_time_app', where='id_company', meaning=user.id, table='dev_software')
     cd_time = datetime.datetime.strptime(date, '%Y-%m-%d %X')
     if datetime.datetime.today() > cd_time:
-        if BotDB.count_dev(call.from_user.id) > BotDB.vCollector(where='name', meaning='quantity_dev_for_app', table='value_it'):
-            await bot.delete_message(chat_id=call.from_user.id,message_id=call.message.message_id)
-            await bot.send_message(text=get_text('first_app1'),chat_id=call.from_user.id, reply_markup=keyboard_default.cancel())
+        if BotDB.count_dev(user.id) > BotDB.vCollector(where='name', meaning='quantity_dev_for_app', table='value_it'):
+            await bot.delete_message(chat_id=user.id, message_id=call.message.message_id)
+            await bot.send_message(text=get_text('first_app1'),chat_id=user.id, reply_markup=keyboard_default.cancel())
             await company_dev_software.Q9.set()
         else:
             await call.answer(get_text('first_app_cancel'), show_alert=True)
@@ -61,6 +64,7 @@ async def first_app1(call: CallbackQuery, state: FSMContext):
 @ban(state=True)
 @last_tap('-', state=True)
 async def first_app2(message: Message, state: FSMContext):
+    user = User(message.from_user.id)
     if message.text == get_button('*2'):
         await message.answer(get_text('first_app2.5', format=False), reply_markup=keyboard_default.company_dev_software())
         await company_dev_software.Q1.set()
@@ -72,10 +76,10 @@ async def first_app2(message: Message, state: FSMContext):
         await message.answer(get_text('first_app2.3', format=False))
     else:
         date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
-        BotDB.add_new_app(id_company=message.from_user.id, name_app=message.text, one_pay=one_pay(message.from_user.id), income=average_income_dev(message.from_user.id), date_reg=date, quantity_min_build=time_for_build(message.from_user.id))
+        BotDB.add_new_app(id_company=user.id, name_app=message.text, one_pay=one_pay(user.id), income=average_income_dev(user.id), date_reg=date, quantity_min_build=time_for_build(user.id))
         cd = BotDB.vCollector(where='name', meaning=f'cooldown_app', table='value_it')
         cd_time = datetime.datetime.strptime(date, '%X %m/%d/%Y') + datetime.timedelta(hours=cd)
-        BotDB.updateT(key='cd_time_app', where='id_company', meaning=message.from_user.id, text=cd_time, table='dev_software')
+        BotDB.updateT(key='cd_time_app', where='id_company', meaning=user.id, text=cd_time, table='dev_software')
         await message.answer(get_text('first_app2.4', format=False), reply_markup=keyboard_default.company_dev_software())
         await company_dev_software.Q1.set()
 
@@ -97,12 +101,13 @@ async def my_top_apps(call: CallbackQuery, state: FSMContext):
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def top_apps(call: CallbackQuery, state: FSMContext):
+    id_user = call.from_user.id
     d = {
-        'list_top_apps': list_top_apps(call.from_user.id).strip('\n'),
-        'end': your_app_top(call.from_user.id)
+        'list_top_apps': list_top_apps(id_user).strip('\n'),
+        'end': your_app_top(id_user)
         }
     try:
-        await bot.edit_message_text(text=get_text('top_apps', format=True, d=d), chat_id=call.from_user.id,message_id=call.message.message_id, reply_markup=keyboard_inline.app_back())
+        await bot.edit_message_text(text=get_text('top_apps', format=True, d=d), chat_id=id_user, message_id=call.message.message_id, reply_markup=keyboard_inline.app_back())
     except:
         pass
 
@@ -111,7 +116,7 @@ async def top_apps(call: CallbackQuery, state: FSMContext):
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def back_to_menu_apps(call: CallbackQuery, state: FSMContext):
-    await bot.edit_message_text(get_text('menu_create_apps', format=True, d=app_menu_data(call.from_user.id)), chat_id=call.from_user.id,message_id=call.message.message_id, reply_markup=keyboard_inline.menu_apps())
+    await bot.edit_message_text(get_text('menu_create_apps', format=True, d=app_menu_data(call.from_user.id)), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.menu_apps())
 
 # #########################################
 
@@ -144,7 +149,7 @@ async def data_centre_foreign(call: CallbackQuery, state: FSMContext):
         'percent_one_pay': shell_money(percent_one_pay), 
         'percent_infinity_pay': shell_money(percent_infinity_pay)
         }
-    await bot.edit_message_text(get_text('data_centre_foreign', format=True, d=d), chat_id=call.from_user.id,message_id=call.message.message_id, reply_markup=keyboard_inline.data_centre_open_back(place='foreign'))
+    await bot.edit_message_text(get_text('data_centre_foreign', format=True, d=d), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.data_centre_open_back(place='foreign'))
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'home' and call.data.split(':')[0] == 'data_centre', state=company_dev_software.Q1)
@@ -158,7 +163,7 @@ async def data_centre_home(call: CallbackQuery, state: FSMContext):
         'percent_one_pay': shell_money(percent_one_pay), 
         'percent_infinity_pay': shell_money(percent_infinity_pay)
         }
-    await bot.edit_message_text(get_text('data_centre_home', format=True, d=d), chat_id=call.from_user.id,message_id=call.message.message_id, reply_markup=keyboard_inline.data_centre_open_back(place='home'))
+    await bot.edit_message_text(get_text('data_centre_home', format=True, d=d), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.data_centre_open_back(place='home'))
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'data_centre', state=company_dev_software.Q1)
@@ -183,15 +188,16 @@ async def data_centre_back(call: CallbackQuery, state: FSMContext):
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def open_data_centre1(call: CallbackQuery, state: FSMContext):
+    user = User(call.from_user.id)
     place = call.data.split(':')[2]
     currency = 'rub' if call.data.split(':')[2] == 'home' else 'usd'
     cost_datacentre = BotDB.vCollector(where='name', meaning=f'cost_datacentre_{place}', table='value_it')
-    if BotDB.get(key=currency, where='id_user', meaning=call.from_user.id) >= cost_datacentre:
-        await bot.delete_message(chat_id=call.from_user.id,message_id=call.message.message_id)
+    if BotDB.get(key=currency, where='id_user', meaning=user.id) >= cost_datacentre:
+        await bot.delete_message(chat_id=user.id, message_id=call.message.message_id)
         add_index = 1 if place == 'home' else 2
-        BotDB.add(key=currency, where='id_user', meaning=call.from_user.id, num=-cost_datacentre)
-        add_2dot_data(key=f'data_centre', where='id_company', meaning=call.from_user.id, table='dev_software', where_data=0, meaning_data='1', add_index=add_index, add=1)  
-        await bot.send_message(text=get_text('open_data_centre1'),chat_id=call.from_user.id, reply_markup=keyboard_default.company_dev_software())
+        BotDB.add(key=currency, where='id_user', meaning=user.id, num=-cost_datacentre)
+        add_2dot_data(key=f'data_centre', where='id_company', meaning=user.id, table='dev_software', where_data=0, meaning_data='1', add_index=add_index, add=1)  
+        await bot.send_message(text=get_text('open_data_centre1'), chat_id=user.id, reply_markup=keyboard_default.company_dev_software())
     else:
         await call.answer(get_text('open_data_centre_cancel', format=True, d={'currency':currency}), show_alert=True)
 
@@ -302,17 +308,18 @@ async def hire_dev_right(call: CallbackQuery, state: FSMContext):
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def hire_dev1(call: CallbackQuery, state: FSMContext):
+    user = User(call.from_user)
     data = await state.get_data()
     dic = data.get('l')
     index = int(call.data.split(':')[2]) + 1
     async with state.proxy() as data:
         data['index'] = index
-    if BotDB.get(key='rub', where='id_user', meaning=call.from_user.id) >= float(cleannum(dic[index-1]['salary'])):
-        await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
+    if user.get_rub >= float(cleannum(dic[index-1]['salary'])):
+        await bot.edit_message_reply_markup(user.id, call.message.message_id, reply_markup=None)
         d = {
-            'available': shell_money(available(call.from_user.id, float(cleannum(dic[index-1]['salary']))))
+            'available': shell_money(available(user.id, float(cleannum(dic[index-1]['salary']))))
             }
-        await bot.send_message(call.from_user.id, get_text('hire_dev1.1', format=True, d=d), reply_markup=keyboard_default.cancel())
+        await bot.send_message(user.id, get_text('hire_dev1.1', format=True, d=d), reply_markup=keyboard_default.cancel())
         await company_dev_software.Q2.set()
     else:
         await call.answer(get_text('hire_dev1.2'), show_alert=True)
@@ -322,6 +329,7 @@ async def hire_dev1(call: CallbackQuery, state: FSMContext):
 @ban(state=True)
 @last_tap('-', state=True)
 async def hire_dev2(message: Message, state: FSMContext):
+    user = User(message.from_user.id)
     if message.text == get_button('*2'):
         await message.answer(get_text('hire_dev2.1', format=False), reply_markup=keyboard_default.company_dev_software())
         await company_dev_software.Q1.set()    
@@ -330,11 +338,11 @@ async def hire_dev2(message: Message, state: FSMContext):
         data = await state.get_data()
         dic = data.get('l')
         index = data.get('index')
-        if quantity_dev_company(message.from_user.id) + int(cleannums) <= quantity_place_company(message.from_user.id):
-            if BotDB.get(key='rub', where='id_user', meaning=message.from_user.id) >= float(cleannum(dic[index-1]['salary'])) * int(cleannums):
+        if quantity_dev_company(user.id) + int(cleannums) <= quantity_place_company(user.id):
+            if user.get_rub >= float(cleannum(dic[index-1]['salary'])) * int(cleannums):
                 pay = calculate_pay_dev(quantity=int(cleannums), salary_hour=float(cleannum(dic[index-1]['salary'])))
-                BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=-pay[0])
-                BotDB.add(key=f'quantity_dev_{index}', where='id_company', meaning=message.from_user.id, table='dev_software', num=int(cleannums))
+                BotDB.add(key='rub', where='id_user', meaning=user.id, num=-pay[0])
+                BotDB.add(key=f'quantity_dev_{index}', where='id_company', meaning=user.id, table='dev_software', num=int(cleannums))
                 d = {
                     'pay':shell_money(pay[0]),
                     'min_job': shell_money(pay[1])
@@ -353,11 +361,12 @@ async def hire_dev2(message: Message, state: FSMContext):
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def dismiss_dev1(call: CallbackQuery, state: FSMContext):
+    user = User(call.from_user)
     index =int(call.data.split(':')[2]) + 1
     async with state.proxy() as data:
         data['index'] = index
     if BotDB.get(key=f'quantity_dev_{index}', where='id_company', meaning=call.from_user.id, table='dev_software') > 0:
-        app_build_answ = app_build(call.from_user.id)
+        app_build_answ = app_build(user.id)
         if not app_build_answ[0]:
             await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
             await bot.send_message(call.from_user.id, get_text('dismiss_dev1.1', format=False), reply_markup=keyboard_default.cancel())

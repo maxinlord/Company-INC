@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from db import BotDB
 from aiogram.utils.callback_data import CallbackData
-from all_function import get_button
+from all_function import get_button, parse_2dot_data
 
 BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
@@ -238,3 +238,19 @@ def buy_stocks():
         ]
     ])
     return buy_stocks
+
+
+def trends_menu_():
+    buy_stocks =  InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_button('i5.1'), callback_data=f'trends:voting')
+        ]
+    ])
+    return buy_stocks
+
+def all_voting_company(id_company):
+    all_voting_company = InlineKeyboardMarkup(row_width=2)
+    for i in parse_2dot_data(table='value_main', key='text_box1', where='name', meaning='all_companys')[1:]:
+        all_voting_company.insert(InlineKeyboardButton(text=i[0], callback_data=f'trends:{i[1]}'))
+    all_voting_company.insert(InlineKeyboardButton(text=get_button('i6.1.2'), callback_data=f'trends:back'))
+    return all_voting_company

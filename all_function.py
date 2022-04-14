@@ -16,6 +16,76 @@ import re
 BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
 
+
+class User:
+
+    def __init__(self, id_user):
+        self.BotDB = BotDB
+        
+        self.id: int = id_user
+        self.username: str = self.BotDB.get(key='username', where='id_user', meaning=self.id)
+        self.name: str = self.BotDB.get(key='name', where='id_user', meaning=self.id)
+    
+    @property
+    def get_company_name(self):
+        return self.BotDB.get(key='name_company', where='id_company', meaning=self.id, table=self.get_type_of_activity)
+    
+    @property
+    def get_nickname(self):
+        return self.BotDB.get(key='nickname', where='id_user', meaning=self.id)
+    
+    @property
+    def get_type_of_activity(self):
+        return self.BotDB.get(key='type_of_activity', where='id_user', meaning=self.id)
+
+    @property
+    def get_rub(self):
+        return self.BotDB.get(key='rub', where='id_user', meaning=self.id)
+    
+    @property
+    def get_usd(self):
+        return self.BotDB.get(key='usd', where='id_user', meaning=self.id)
+    
+    @property
+    def get_btc(self):
+        return self.BotDB.get(key='btc', where='id_user', meaning=self.id)
+
+
+class DevSoftware:
+
+    def __init__(self, id_company) -> None:
+        self.user: User = User(id_company)
+    
+    def get_quantity_dev(self, dev: int):
+        if int(dev) in [1, 2, 3]:
+            return self.user.BotDB.get(key=f'quantity_dev_{dev}', where='id_company', meaning=self.user.id, table='dev_software')
+    
+    def get_quantity_buy_offices(self, office: int):
+        return get_2dot_data(key=f'quantity_office_{office}', where='id_company', meaning=self.user.id, table='dev_software', meaning_data='1', get_data='buy')
+
+    def get_quantity_rent_offices(self, office: int):
+        return get_2dot_data(key=f'quantity_office_{office}', where='id_company', meaning=self.user.id, table='dev_software', meaning_data='1', get_data='rent')
+
+    @property    
+    def quantity_all_devs(self):
+        return sum([self.get_quantity_dev(i) for i in range(1, 3+1)])
+    
+    @property
+    def quantity_all_places(self):
+        i = 1
+        y = True
+        places = 0
+        while y:
+            p = parse_2dot_data(key=f'quantity_office_{i}', where='id_company', meaning=self.user.id, table='dev_software')
+            places += (p[1][1] + p[1][2]) * BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it')
+            try:
+                i+=1
+                self.user.BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it')
+            except:
+                y = False
+        return places
+
+
 # #########################################
 
 def check_name_app(name_app):
@@ -178,17 +248,7 @@ def quantity_place_company(id_company):
     return places
 
 def quantity_dev_company(id_company):
-    i = 1
-    y = True
-    dev = 0
-    while y:
-        dev += BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software')
-        i+=1
-        try:
-            BotDB.vCollector(where='name', meaning=f'salary_dev_{i}', table='value_it')
-        except:
-            y = False
-    return dev
+    return sum([BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)])
 
 
 def quantity_devices(id_company):
@@ -369,10 +429,12 @@ def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_d
 def delete_2dot_data(table, key, where, meaning, unique_value_data):
     get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
     l = get_data.split(',')
+    headers = l[0]
     s = ''
     for i in l[1:]:
         if unique_value_data not in i:
             s += ',' + i
+    s = headers + s
     BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
 
 
