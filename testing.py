@@ -15,13 +15,26 @@ import random
 import re
 import emoji
 import datetime
-from all_function import *
+from all_function import count_percent_device, create_mat_percents, infinity_income_app, one_pay_app, shell_num
+# from classes import *
 import numpy as np
 
 id_user = 474701274
 
-i = DevSoftware(id_user)
-print(i.get_quantity_buy_offices(4))
+def ttime(func):
+    def wrapper():
+        t1 = time.time()
+        func()
+        print(time.time() - t1)
+    return wrapper
+
+
+# i = DevSoftware(id_user)
+# device_k = create_mat_percents(id_user)
+# print(infinity_income_app(id_user))
+
+# print(shell_num(50000.10, q_signs_after_comma=3))
+
 
 # def isfloat(num):
 #     if num.isdigit():
@@ -70,9 +83,9 @@ print(i.get_quantity_buy_offices(4))
 
 # l = [{
 #         'description': get_text(f'description_comp', format=False),
-#         'quantity': shell_money(get_2dot_data(key=f'quantity_comp', where='id_company', meaning=id_user, table='dev_software', where_data='lvl', meaning_data='1', get_data='quantity')),
-#         'cost': shell_money(BotDB.vCollector(where='name', meaning=f'cost_comp_1', table='value_it')),
-#         'percent': shell_money(BotDB.vCollector(where='name', meaning=f'percent_comp_1', table='value_it'))
+#         'quantity': shell_num(get_2dot_data(key=f'quantity_comp', where='id_company', meaning=id_user, table='dev_software', where_data='lvl', meaning_data='1', get_data='quantity')),
+#         'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_comp_1', table='value_it')),
+#         'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_comp_1', table='value_it'))
 #     }]
 # pprint(l)
 
@@ -126,7 +139,7 @@ print(i.get_quantity_buy_offices(4))
 #     devices_k = []
 #     while y:
 #         device = devices[ind]
-#         q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')[1:]
+#         q_device = parse_2dot_data(key=f'quantity_device_{device}', where='id_company', meaning=id_company, table='dev_software')[1:]
 #         q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
 #         # print(q_device)
 #         for i in q_device:
@@ -445,7 +458,7 @@ print(i.get_quantity_buy_offices(4))
 #     except:
 #         pass
 
-# def shell_money(quantity_money, currency='usd'):
+# def shell_num(quantity_money, currency='usd'):
 #     '''Обертка для чисел финансовых'''
 #     lnum = '{0:,.2f}'.format(float(quantity_money))
 #     lnum = int(lnum.split('.')[1])

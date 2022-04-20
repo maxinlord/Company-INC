@@ -6,6 +6,7 @@ from aiogram.types import Message
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram import types
+from classes import DevSoftware
 from dispatcher import dp, bot
 from bot import BotDB
 from db import User
@@ -205,7 +206,7 @@ async def account_user(message: Message):
     rub = BotDB.get(key='rub', where='id_user', meaning=id_user)
     usd = BotDB.get(key='usd', where='id_user', meaning=id_user)
     btc = BotDB.get(key='btc', where='id_user', meaning=id_user)
-    text = get_text('account_user1', {'rub':shell_money(rub), 'usd':shell_money(usd), 'btc':shell_money(btc, "btc")})
+    text = get_text('account_user1', {'rub':shell_num(rub), 'usd':shell_num(usd), 'btc':shell_num(btc, "btc")})
     await message.answer_photo(pic, text)
 
 
@@ -226,15 +227,15 @@ async def bank(message: Message):
     sec = 60 - int(time_.split(':')[2])
     percent_usd = BotDB.get(key='perc_usd', where='rate_usd_now', meaning=rate_usd, table='graf_rate_usd')
     percent_btc = BotDB.get(key='perc_btc', where='rate_btc_now', meaning=rate_btc, table='graf_rate_btc')
-    str_with_sign_usd = f'{emodziside(percent_usd)}({shell_money(percent_usd)}%)'
-    str_with_sign_btc = f'{emodziside(percent_btc)}({shell_money(percent_btc)}%)'
+    str_with_sign_usd = f'{emodziside(percent_usd)}({shell_num(percent_usd)}%)'
+    str_with_sign_btc = f'{emodziside(percent_btc)}({shell_num(percent_btc)}%)'
     d = {
         'sec':sec,
-        'rub':shell_money(rub),
-        'usd':shell_money(usd),
-        'btc':shell_money(btc, "btc"),
-        'rate_usd':shell_money(rate_usd),
-        'rate_btc':shell_money(rate_btc),
+        'rub':shell_num(rub),
+        'usd':shell_num(usd),
+        'btc':shell_num(btc, "btc"),
+        'rate_usd':shell_num(rate_usd),
+        'rate_btc':shell_num(rate_btc),
         'percent_usd': str_with_sign_usd,
         'percent_btc': str_with_sign_btc
         }
@@ -258,15 +259,15 @@ async def bank2(call: CallbackQuery):
     sec = 60 - int(time_.split(':')[2])
     percent_usd = BotDB.get(key='perc_usd', where='rate_usd_now', meaning=rate_usd, table='graf_rate_usd')
     percent_btc = BotDB.get(key='perc_btc', where='rate_btc_now', meaning=rate_btc, table='graf_rate_btc')
-    str_with_sign_usd = f'{emodziside(percent_usd)}({shell_money(percent_usd)}%)'
-    str_with_sign_btc = f'{emodziside(percent_btc)}({shell_money(percent_btc)}%)'
+    str_with_sign_usd = f'{emodziside(percent_usd)}({shell_num(percent_usd)}%)'
+    str_with_sign_btc = f'{emodziside(percent_btc)}({shell_num(percent_btc)}%)'
     d = {
         'sec':sec,
-        'rub':shell_money(rub),
-        'usd':shell_money(usd),
-        'btc':shell_money(btc, "btc"),
-        'rate_usd':shell_money(rate_usd),
-        'rate_btc':shell_money(rate_btc),
+        'rub':shell_num(rub),
+        'usd':shell_num(usd),
+        'btc':shell_num(btc, "btc"),
+        'rate_usd':shell_num(rate_usd),
+        'rate_btc':shell_num(rate_btc),
         'percent_usd': str_with_sign_usd,
         'percent_btc': str_with_sign_btc
         }
@@ -305,8 +306,8 @@ async def rub_usd2(message: Message, state: FSMContext):
             BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=-num)
             d = {
                 'percent_bank':int(percent_bank * 100),
-                'get_bank':shell_money(usd * percent_bank),
-                'get_user':shell_money(usd_with_fee)
+                'get_bank':shell_num(usd * percent_bank),
+                'get_user':shell_num(usd_with_fee)
                 }
             await message.answer(get_text('rub_usd2', d), reply_markup=keyboard_default.main_page())
             await state.finish()
@@ -322,8 +323,8 @@ async def rub_usd2(message: Message, state: FSMContext):
                 BotDB.updateN(key='rub', where='id_user', meaning=message.from_user.id, num=0)
                 d = {
                     'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_money(usd * percent_bank),
-                    'get_user':shell_money(usd_with_fee)
+                    'get_bank':shell_num(usd * percent_bank),
+                    'get_user':shell_num(usd_with_fee)
                     }
                 await message.answer(get_text('rub_usd2', d), reply_markup=keyboard_default.main_page())
                 
@@ -370,8 +371,8 @@ async def usd_rub2(message: Message, state: FSMContext):
             BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=-num)
             d = {
                 'percent_bank':int(percent_bank * 100),
-                'get_bank':shell_money(rub * percent_bank),
-                'get_user':shell_money(rub_with_fee)
+                'get_bank':shell_num(rub * percent_bank),
+                'get_user':shell_num(rub_with_fee)
                 }
             await message.answer(get_text('usd_rub2', d), reply_markup=keyboard_default.main_page())
             await state.finish()
@@ -389,8 +390,8 @@ async def usd_rub2(message: Message, state: FSMContext):
                 BotDB.updateN(key='usd', where='id_user', meaning=message.from_user.id, num=0)
                 d = {
                     'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_money(rub * percent_bank),
-                    'get_user':shell_money(rub_with_fee)
+                    'get_bank':shell_num(rub * percent_bank),
+                    'get_user':shell_num(rub_with_fee)
                     }
                 await message.answer(get_text('usd_rub2', d), reply_markup=keyboard_default.main_page())
                 
@@ -444,8 +445,8 @@ async def usd_btc2(message: Message, state: FSMContext):
                 BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=-num)
                 d = {
                     'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_money(btc * percent_bank, "btc"),
-                    'get_user':shell_money(btc_with_fee, "btc")
+                    'get_bank':shell_num(btc * percent_bank, "btc"),
+                    'get_user':shell_num(btc_with_fee, "btc")
                     }
                 await message.answer(get_text('usd_btc3', d), reply_markup=keyboard_default.main_page()) 
                 await state.finish()
@@ -466,8 +467,8 @@ async def usd_btc2(message: Message, state: FSMContext):
                 BotDB.updateN(key='usd', where='id_user', meaning=message.from_user.id, num=0)
                 d = {
                     'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_money(btc * percent_bank, "btc"),
-                    'get_user':shell_money(btc_with_fee, "btc")
+                    'get_bank':shell_num(btc * percent_bank, "btc"),
+                    'get_user':shell_num(btc_with_fee, "btc")
                     }
                 await message.answer(get_text('usd_btc3', d), reply_markup=keyboard_default.main_page()) 
                 await state.finish()
@@ -512,8 +513,8 @@ async def btc_usd2(message: Message, state: FSMContext):
             BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=-num)
             d = {
                 'percent_bank':int(percent_bank * 100),
-                'get_bank':shell_money(usd * percent_bank),
-                'get_user':shell_money(usd_with_fee)
+                'get_bank':shell_num(usd * percent_bank),
+                'get_user':shell_num(usd_with_fee)
                 }
             await message.answer(get_text('btc_usd2', d), reply_markup=keyboard_default.main_page()) 
             await state.finish()
@@ -531,8 +532,8 @@ async def btc_usd2(message: Message, state: FSMContext):
                 BotDB.updateN(key='btc', where='id_user', meaning=message.from_user.id, num=0)
                 d = {
                     'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_money(usd * percent_bank),
-                    'get_user':shell_money(usd_with_fee)
+                    'get_bank':shell_num(usd * percent_bank),
+                    'get_user':shell_num(usd_with_fee)
                     }
                 await message.answer(get_text('btc_usd2', d), reply_markup=keyboard_default.main_page())   
                 await state.finish()
@@ -697,8 +698,8 @@ async def buy_stocks3(message: Message, state: FSMContext):
 async def my_stocks(message: Message):
     try:
         d = {
-            'count_stocks_stay': shell_money(BotDB.get(key='count_stocks_stay', where='id_company', meaning=message.from_user.id, table='stocks')),
-            'price_one_stocks': shell_money(BotDB.get(key='price_one_stocks', where='id_company', meaning=message.from_user.id, table='stocks'))
+            'count_stocks_stay': shell_num(BotDB.get(key='count_stocks_stay', where='id_company', meaning=message.from_user.id, table='stocks')),
+            'price_one_stocks': shell_num(BotDB.get(key='price_one_stocks', where='id_company', meaning=message.from_user.id, table='stocks'))
             }
         await message.answer(get_text('my_stocks', format=True, d=d))
     except:
@@ -861,8 +862,8 @@ async def referal_invite(message: Message):
     award_referral = BotDB.vCollector(table='value_main', where='name', meaning='award_referral')  # награда реферала перешедшего по ссылке
     d = {
             'oneseven':oneseven,
-            'award_referrer':shell_money(award_referrer),
-            'award_referral':shell_money(award_referral),
+            'award_referrer':shell_num(award_referrer),
+            'award_referral':shell_num(award_referral),
             'referrer_linc':referrer_linc(message.from_user.id),
             'get_user_referals':BotDB.get_user_referals(message.from_user.id)[1]
         }
@@ -886,13 +887,15 @@ def company_keyboard(id_user):
     type_of_activity = BotDB.get(key='type_of_activity', where='id_user', meaning=id_user)
     keyboard = keyboard_default.company_dev_software()
     if type_of_activity == 'dev_software':
+        user = DevSoftware(id_user)
         d = {
-            'name_company': BotDB.get(key='name_company', where='id_company', meaning=id_user, table=type_of_activity),
+            'name_company': user.user.company_name,
             'profit': 'profit',
             'income': 'income',
             'expense': 'expense',
-            'count_place': quantity_place_company(id_user),
-            'count_dev': quantity_dev_company(id_user) 
+            'count_place': user.quantity_all_places,
+            'count_dev': user.quantity_all_devs,
+            'count_device': user.quantity_devices 
             }
         text_menu = get_text('company_dev_software', format=True, d=d)
         keyboard = keyboard_default.company_dev_software()

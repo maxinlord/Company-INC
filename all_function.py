@@ -1,8 +1,11 @@
+from ctypes import Union
 import datetime
+from itertools import count
+from pprint import pprint
 import random
 import string
 import types
-from typing import List
+from typing import List, Tuple, Union
 from db import BotDB
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher import FSMContext
@@ -16,76 +19,6 @@ import re
 BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
 
-
-class User:
-
-    def __init__(self, id_user):
-        self.BotDB = BotDB
-        
-        self.id: int = id_user
-        self.username: str = self.BotDB.get(key='username', where='id_user', meaning=self.id)
-        self.name: str = self.BotDB.get(key='name', where='id_user', meaning=self.id)
-    
-    @property
-    def get_company_name(self):
-        return self.BotDB.get(key='name_company', where='id_company', meaning=self.id, table=self.get_type_of_activity)
-    
-    @property
-    def get_nickname(self):
-        return self.BotDB.get(key='nickname', where='id_user', meaning=self.id)
-    
-    @property
-    def get_type_of_activity(self):
-        return self.BotDB.get(key='type_of_activity', where='id_user', meaning=self.id)
-
-    @property
-    def get_rub(self):
-        return self.BotDB.get(key='rub', where='id_user', meaning=self.id)
-    
-    @property
-    def get_usd(self):
-        return self.BotDB.get(key='usd', where='id_user', meaning=self.id)
-    
-    @property
-    def get_btc(self):
-        return self.BotDB.get(key='btc', where='id_user', meaning=self.id)
-
-
-class DevSoftware:
-
-    def __init__(self, id_company) -> None:
-        self.user: User = User(id_company)
-    
-    def get_quantity_dev(self, dev: int):
-        if int(dev) in [1, 2, 3]:
-            return self.user.BotDB.get(key=f'quantity_dev_{dev}', where='id_company', meaning=self.user.id, table='dev_software')
-    
-    def get_quantity_buy_offices(self, office: int):
-        return get_2dot_data(key=f'quantity_office_{office}', where='id_company', meaning=self.user.id, table='dev_software', meaning_data='1', get_data='buy')
-
-    def get_quantity_rent_offices(self, office: int):
-        return get_2dot_data(key=f'quantity_office_{office}', where='id_company', meaning=self.user.id, table='dev_software', meaning_data='1', get_data='rent')
-
-    @property    
-    def quantity_all_devs(self):
-        return sum([self.get_quantity_dev(i) for i in range(1, 3+1)])
-    
-    @property
-    def quantity_all_places(self):
-        i = 1
-        y = True
-        places = 0
-        while y:
-            p = parse_2dot_data(key=f'quantity_office_{i}', where='id_company', meaning=self.user.id, table='dev_software')
-            places += (p[1][1] + p[1][2]) * BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it')
-            try:
-                i+=1
-                self.user.BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it')
-            except:
-                y = False
-        return places
-
-
 # #########################################
 
 def check_name_app(name_app):
@@ -95,16 +28,19 @@ def check_name_app(name_app):
 
 # #########################################
 
-def one_pay(id_company):
+def one_pay_app(id_company):
     all_mark = 0
     total_income = 0
-    all_dev = 0
+    all_dev = quantity_devs_company(id_company)
+    device_k = create_mat_percents(id_company)
+    
+    for j in range(1, 3+1):
+        quantity_dev = BotDB.get(key=f'quantity_dev_{j}', where='id_company', meaning=id_company, table='dev_software')
+        all_mark += quantity_dev * j
+        for i in count_percent_device(device_k, id_company, viev=False):
+            income_dev = BotDB.vCollector(table='value_it', where='name', meaning=f'income_dev_{j}')
+            total_income += ((1 + i['percent']) * income_dev) * i['quantity_same_percent'] if i['dev'] == j else 0
 
-    for i in range(1, 3+1):
-        quantity_dev = BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software')
-        all_dev += quantity_dev
-        all_mark += quantity_dev * i
-        total_income += quantity_dev * BotDB.vCollector(table='value_it', where='name', meaning=f'income_dev_{i}')
 
     percent_left = BotDB.vCollector(table='value_it', where='name', meaning='percent_one_pay_left')
     percent_right = BotDB.vCollector(table='value_it', where='name', meaning='percent_one_pay_right')
@@ -115,24 +51,22 @@ def one_pay(id_company):
 
     return x_income
 
-def average_income_dev(id_company):
+def infinity_income_app(id_company):
     total_income = 0
-    all_dev = 0
+    all_dev = quantity_devs_company(id_company)
+    device_k = create_mat_percents(id_company)
 
-    for i in range(1, 3+1):
-        quantity_dev = BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software')
-        all_dev += quantity_dev
-        total_income += quantity_dev * BotDB.vCollector(table='value_it', where='name', meaning=f'income_dev_{i}')
+    for j in range(1, 3+1):
+        for i in count_percent_device(device_k, id_company, viev=False):
+            income_dev = BotDB.vCollector(table='value_it', where='name', meaning=f'income_dev_{j}')
+            total_income += ((1 + i['percent']) * income_dev) * i['quantity_same_percent'] if i['dev'] == j else 0
     
     average_income = round(total_income/all_dev, 2)
 
     return average_income
 
 def time_for_build(id_company):
-    min = 0
-
-    for i in range(1, 3+1):
-        min += BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') * (4-i)
+    min = sum([BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') * (4-i) for i in range(1, 3+1)])
     
     base_time = BotDB.vCollector(table='value_it', where='name', meaning='base_time_build_app')
     time_build = base_time + min 
@@ -168,8 +102,8 @@ def list_top_apps(id_company):
         d = {
             'number_string': number_string,
             'name_app': i[1],
-            'one_pay': shell_money(i[2]),
-            'income': shell_money(i[3])
+            'one_pay': shell_num(i[2]),
+            'income': shell_num(i[3])
             }
         t += get_text('template_string_my_app', format=True, d=d) if i[0] == id_company else get_text('template_string_app', format=True, d=d)
         number_string += 1
@@ -183,8 +117,8 @@ def list_my_top_apps(id_company):
             d = {
                 'number_string': number_string,
                 'name_app': i[1],
-                'one_pay': shell_money(i[2]),
-                'income': shell_money(i[3])
+                'one_pay': shell_num(i[2]),
+                'income': shell_num(i[3])
                 }
             t += get_text('template_string_app', format=True, d=d)
             number_string += 1
@@ -206,29 +140,27 @@ def app_menu_data(id_company):
             d = {'time_left': x}
             time_left = get_text('time_left_for_build_app', format=True, d=d)
     d = {
-        'all_income_apps': shell_money(all_income_apps),
+        'all_income_apps': shell_num(all_income_apps),
         'time_left': time_left,
         'quantity_apps': quantity_apps
         }
     return d
 # #########################################
 
-def calculate_pay_dev(quantity, salary_hour):
+def calculate_pay_dev(quantity: int, salary_hour: Union[int, float]):
     min = int(time.strftime('%M'))
     min_job = 60 - min
     first_salary = round((min_job * salary_hour / 60) * quantity, 2) 
     return first_salary, min_job
 
-def calculate_pay_rent(quantity, cost_rent_day):
-    day = time.strftime('%d')
-    month = time.strftime('%m')
-    year = time.strftime('%Y')
+def calculate_pay_rent(quantity: int, cost_rent_day: Union[int, float]) -> Tuple[Union[int, float], int, int]:
+    day, month, year  = time.strftime('%d'), time.strftime('%m'), time.strftime('%Y')
     day = int(time.strftime('%d')) + 1 if datetime.datetime.strptime(f'19:00:00 {month}/{day}/{year}', '%H:%M:%S %m/%d/%Y') < datetime.datetime.today() else time.strftime('%d')
     t = datetime.datetime.strptime(f'19:00:00 {month}/{day}/{year}', '%H:%M:%S %m/%d/%Y') - datetime.datetime.today()
     min_rent = t.seconds // 60
     hours = min_rent // 60
     mins = 0 if min_rent % 60 + 1 == 60 else min_rent % 60 + 1 
-    first_salary = round((min_rent * cost_rent_day / 1440) * quantity, 2) 
+    first_salary = round((min_rent * cost_rent_day / (24 * 60)) * quantity, 2) 
     return first_salary, hours, mins
 
 # #########################################
@@ -247,38 +179,34 @@ def quantity_place_company(id_company):
             y = False
     return places
 
-def quantity_dev_company(id_company):
+def quantity_devs_company(id_company):
     return sum([BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)])
 
 
 def quantity_devices(id_company):
     i = 1
-    ind = 0
+    ind = 1
     q_devices = 0
     y = True
-    devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
     while y:
-        device = devices[ind]
-        data = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')
+        data = parse_2dot_data(key=f'quantity_device_{ind}', where='id_company', meaning=id_company, table='dev_software')
         ind_q = data[0].index('quantity')
         for i in data[1:]:
             q_devices += i[ind_q]
         try:
             ind += 1
-            device = devices[ind]
+            BotDB.get(table='dev_software', key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
         except:
             y = False
     return q_devices
 
 def create_mat_percents(id_company):
-    devices = ['screen', 'armchair', 'mouse', 'comp', 'keyboard', 'carpet']
     i = 1
-    ind = 0
+    ind = 1
     y = True
     devices_k = []
     while y:
-        device = devices[ind]
-        q_device = parse_2dot_data(key=f'quantity_{device}', where='id_company', meaning=id_company, table='dev_software')[1:]
+        q_device = parse_2dot_data(key=f'quantity_device_{ind}', where='id_company', meaning=id_company, table='dev_software')[1:]
         q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
         for i in q_device:
             s = []
@@ -301,29 +229,31 @@ def create_mat_percents(id_company):
                     s += [1]*i[1]
                     i[1] = 0
                     q_devs[q_devs.index(j)] = j - i[1]
-                    s += [0]*(quantity_dev_company(id_company) - len(s))
+                    s += [0]*(quantity_devs_company(id_company) - len(s))
                     break
             i[1] = true_q_device
-            devices_k.append([f'{device}_{i[0]}'] + s)
+            devices_k.append([f'{ind}_{i[0]}'] + s)
         try:
             ind += 1
-            device = devices[ind]
+            BotDB.get(table='dev_software', key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
         except:
             y = False
+    # pprint(devices_k, width=300)
     return devices_k
 
 
-def count_percent_device(device_k, id_company):
+def count_percent_device(device_k, id_company, viev=True):
     q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3+1)]
     dev_name = ['junior', 'middle', 'senior']
     percents = []
-    for i in range(1, quantity_dev_company(id_company)+1):
+    for i in range(1, quantity_devs_company(id_company)+1):
         percent = 0
         for x in range(len(device_k)):
             if device_k[x][i] == 1:
-                percent += BotDB.vCollector(where='name', meaning=f'percent_{device_k[x][0]}', table='value_it') 
+                percent += BotDB.vCollector(where='name', meaning=f'percent_device_{device_k[x][0]}', table='value_it') 
         percents.append(round(percent, 2))
     text = ''
+    l = []
     u = 0
     for i in enumerate(q_devs):
         slice = percents[u:i[1]+u]
@@ -331,15 +261,25 @@ def count_percent_device(device_k, id_company):
             d = {
                 'dev': dev_name[i[0]],
                 'quantity_same_percent': slice.count(j),
-                'percent': shell_money(j*100)
+                'percent': shell_num(j*100)
                 }
-            text += get_text('template_string_count_percent_device', format=True, d=d)
+            if viev:
+                text += get_text('template_string_count_percent_device', format=True, d=d)
+            else:
+                d = {
+                'dev': i[0]+1,
+                'quantity_same_percent': slice.count(j),
+                'percent': j
+                }
+                l.append(d)
         u += i[1]
-    return text
+    if viev:
+        return text
+    return l
 
 # #########################################
 
-def app_build(id_company):
+def app_build(id_company: int) -> Tuple[bool, str]:
     for i in BotDB.get_alls(keys='done, id_company, name_app', table='dev_software_apps'):
         if i[0] == 0 and i[1] == id_company:
             return True, i[2]
@@ -661,10 +601,10 @@ def get_your_stocks(id_user):
     for x in parse:
         d = {
             'number_string': number_string,
-            'id_company':shell_money(x[0], currency='id'),
+            'id_company':shell_num(x[0], currency='id'),
             'name_company':x[1],
-            'quantity_stocks':shell_money(x[2]),
-            'price_buy': shell_money(x[3])
+            'quantity_stocks':shell_num(x[2]),
+            'price_buy': shell_num(x[3])
         }
         t += get_text('template_string_my_stocks', format=True, d=d)
         number_string += 1
@@ -691,10 +631,10 @@ def list_stocks(page=1):
             if i[2] > 0:
                 if data.index(i) >= (page-1) * count_string and data.index(i)+1 <= page * count_string:
                     d = {
-                        'id_company': shell_money(i[0], currency='id'),
+                        'id_company': shell_num(i[0], currency='id'),
                         'name_company': i[1],
-                        'count_stocks_stay': shell_money(i[2]),
-                        'price_one_stocks': shell_money(i[3]),
+                        'count_stocks_stay': shell_num(i[2]),
+                        'price_one_stocks': shell_num(i[3]),
                         'percent': round(i[4]/i[5] * 100, 4),
                         'seller': BotDB.get(key='name_company', where='id_company', meaning=i[-1], table='stocks')
                         }
@@ -704,10 +644,10 @@ def list_stocks(page=1):
         else:
             if i[2] > 0:
                 d = {
-                    'id_company': shell_money(i[0], currency='id'),
+                    'id_company': shell_num(i[0], currency='id'),
                     'name_company': i[1],
-                    'count_stocks_stay': shell_money(i[2]),
-                    'price_one_stocks': shell_money(i[3]),
+                    'count_stocks_stay': shell_num(i[2]),
+                    'price_one_stocks': shell_num(i[3]),
                     'percent': round(i[4]/i[5] * 100, 4),
                     'seller': BotDB.get(key='name_company', where='id_company', meaning=i[-1], table='stocks')
                     }
@@ -720,22 +660,20 @@ def list_stocks(page=1):
 
 # #########################################
 
-def available(id_user, price_item, currency='rub'):
+def available(id_user: int, price_item: Union[int, float], currency: str ='rub'):
     quantity_money = BotDB.get(key=currency, where='id_user', meaning=id_user)
     quantity_available = quantity_money // price_item
     return quantity_available
 # #########################################
 
-def shell_money(quantity_money, currency='usd'):
-    quantity_money = round(quantity_money, 2)
-    if currency == 'id':
-        return '<code>{}</code>'.format(quantity_money)
-    elif isfloat(str(quantity_money)):
-        if float(quantity_money) % 1 == 0:
-            return '<code>{:,}</code>'.format(int(quantity_money))
-        return '<code>{:,.2f}</code>'.format(float(quantity_money)) if currency == 'usd' else '<code>{:,.5f}</code>'.format(float(quantity_money))
-    else:
-        return '<code>{:,}</code>'.format(int(quantity_money))
+def shell_num(num: Union[int, float], q_signs_after_comma: int = 2, signs: bool =True):
+    if signs:
+        num = round(num, q_signs_after_comma)
+        if isfloat(str(num)):
+            if float(num) % 1 != 0:
+                return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma) 
+        return '<code>{:,}</code>'.format(int(num))
+    return '<code>{}</code>'.format(num)
 
 def cleannum(numb):
     numb = re.sub("[!\"#$%&'()*+,/\\\:;<=>?@[\]^`{|}~]", '', numb)

@@ -242,7 +242,7 @@ async def game_manual(message: Message):
 
 
 
-def shell_money(quantity_money, currency='usd'):
+def shell_num(quantity_money, currency='usd'):
     '''Обертка для '''
     lnum = '{0:,.2f}'.format(float(quantity_money))
     lnum = int(lnum.split('.')[1])
@@ -278,7 +278,7 @@ async def account_user(message: Message):
     rub = BotDB.get(key='rub', where='id_user', meaning=message.from_user.id)
     usd = BotDB.get(key='usd', where='id_user', meaning=message.from_user.id)
     btc = BotDB.get(key='btc', where='id_user', meaning=message.from_user.id)
-    text = f'- RUB = {shell_money(rub)}руб.\n- USD = {shell_money(usd)}$\n- BTC = {shell_money(btc, "btc")}BTC'
+    text = f'- RUB = {shell_num(rub)}руб.\n- USD = {shell_num(usd)}$\n- BTC = {shell_num(btc, "btc")}BTC'
     await bot.send_photo(message.from_user.id, pic, text)
 
 
@@ -330,12 +330,12 @@ async def bank(message: Message):
     time_ = time.strftime('%X').split()[0]
     sec = 60 - int(time_.split(':')[2])
     text = f'На вашем счету\n' \
-           f'- RUB = {shell_money(rub)} руб.\n' \
-           f'- USD = {shell_money(usd)} $\n' \
-           f'- BTC = {shell_money(btc, "btc")} BTC\n\n' \
+           f'- RUB = {shell_num(rub)} руб.\n' \
+           f'- USD = {shell_num(usd)} $\n' \
+           f'- BTC = {shell_num(btc, "btc")} BTC\n\n' \
            f'Курс валют💱\n' \
-           f'- 1$ = {shell_money(rate_usd)} руб.\n' \
-           f'- 1BTC = {shell_money(rate_btc)} $\n\n' \
+           f'- 1$ = {shell_num(rate_usd)} руб.\n' \
+           f'- 1BTC = {shell_num(rate_btc)} $\n\n' \
            f'До обновления \nкурса осталось: {sec} сек.'
     await bot.send_photo(message.from_user.id, pic, text, reply_markup=keyboard_inline.update_and_convert)
 
@@ -352,12 +352,12 @@ async def up_and_convert(call: CallbackQuery):
     time_ = time.strftime('%X').split()[0]
     sec = 60 - int(time_.split(':')[2])
     text = f'На вашем счету\n' \
-           f'- RUB = {shell_money(rub)} руб.\n' \
-           f'- USD = {shell_money(usd)} $\n' \
-           f'- BTC = {shell_money(btc, "btc")} BTC\n\n' \
+           f'- RUB = {shell_num(rub)} руб.\n' \
+           f'- USD = {shell_num(usd)} $\n' \
+           f'- BTC = {shell_num(btc, "btc")} BTC\n\n' \
            f'Курс валют💱\n' \
-           f'- 1$ = {shell_money(rate_usd)} руб.\n' \
-           f'- 1BTC = {shell_money(rate_btc)} $\n\n' \
+           f'- 1$ = {shell_num(rate_usd)} руб.\n' \
+           f'- 1BTC = {shell_num(rate_btc)} $\n\n' \
            f'До обновления \nкурса осталось: {sec} сек.'
     try:
         await bot.edit_message_caption(message_id=call.message.message_id, chat_id=call.from_user.id, caption=text,
@@ -391,9 +391,9 @@ async def q1(message: Message, state: FSMContext):
             BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
             BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=-num)
             await message.answer(f'Сделка удалась!\n\n'
-                                 f'- {int(percent_bank * 100)}%({shell_money(usd * percent_bank)}$) - получил банк за '
+                                 f'- {int(percent_bank * 100)}%({shell_num(usd * percent_bank)}$) - получил банк за '
                                  f'транзакцию\n\n '
-                                 f'Итого: {shell_money(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
+                                 f'Итого: {shell_num(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
             await state.finish()
             BotDB.update_user_state(message.from_user.id)
         else:
@@ -408,9 +408,9 @@ async def q1(message: Message, state: FSMContext):
                 BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
                 BotDB.updateN(key='rub', where='id_user', meaning=message.from_user.id, num=0)
                 await message.answer(f'Сделка удалась!\n\n'
-                                     f'- {int(percent_bank * 100)}%({shell_money(usd * percent_bank)}$) - получил '
+                                     f'- {int(percent_bank * 100)}%({shell_num(usd * percent_bank)}$) - получил '
                                      f'банк за транзакцию\n\n '
-                                     f'Итого: {shell_money(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
+                                     f'Итого: {shell_num(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
                 
                 await state.finish()
                 BotDB.update_user_state(message.from_user.id)
@@ -454,9 +454,9 @@ async def q1(message: Message, state: FSMContext):
             BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=round(rub_with_fee, 2))
             BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=-num)
             await message.answer(f'Сделка удалась!\n\n'
-                                 f'- {int(percent_bank * 100)}%({shell_money(rub * percent_bank)}руб.) - получил банк за '
+                                 f'- {int(percent_bank * 100)}%({shell_num(rub * percent_bank)}руб.) - получил банк за '
                                  f'транзакцию\n\n '
-                                 f'Итого: {shell_money(rub_with_fee)}руб.', reply_markup=keyboard_default.main_page)
+                                 f'Итого: {shell_num(rub_with_fee)}руб.', reply_markup=keyboard_default.main_page)
             
             await state.finish()
             BotDB.update_user_state(message.from_user.id)
@@ -473,9 +473,9 @@ async def q1(message: Message, state: FSMContext):
                 BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=round(rub_with_fee, 2))
                 BotDB.updateN(key='usd', where='id_user', meaning=message.from_user.id, num=0)
                 await message.answer(f'Сделка удалась!\n\n'
-                                     f'- {int(percent_bank * 100)}%({shell_money(rub * percent_bank)}руб.) - получил '
+                                     f'- {int(percent_bank * 100)}%({shell_num(rub * percent_bank)}руб.) - получил '
                                      f'банк за транзакцию\n\n '
-                                     f'Итого: {shell_money(rub_with_fee)}руб.', reply_markup=keyboard_default.main_page)
+                                     f'Итого: {shell_num(rub_with_fee)}руб.', reply_markup=keyboard_default.main_page)
                 
                 await state.finish()
                 BotDB.update_user_state(message.from_user.id)
@@ -527,10 +527,10 @@ async def q1(message: Message, state: FSMContext):
                 BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=round(btc_with_fee, 5))
                 BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=-num)
                 await message.answer(f'Сделка удалась!\n\n'
-                                     f'- {int(percent_bank * 100)}%({shell_money(btc * percent_bank, "btc")}BTC) - '
+                                     f'- {int(percent_bank * 100)}%({shell_num(btc * percent_bank, "btc")}BTC) - '
                                      f'получил банк за '
                                      f'транзакцию\n\n '
-                                     f'Итого: {shell_money(btc_with_fee, "btc")}BTC', reply_markup=keyboard_default.main_page)
+                                     f'Итого: {shell_num(btc_with_fee, "btc")}BTC', reply_markup=keyboard_default.main_page)
                 
                 await state.finish()
                 BotDB.update_user_state(message.from_user.id)
@@ -552,11 +552,11 @@ async def q1(message: Message, state: FSMContext):
                 BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=round(btc_with_fee, 5))
                 BotDB.updateN(key='usd', where='id_user', meaning=message.from_user.id, num=0)
                 await message.answer(f'Сделка удалась!\n\n'
-                                     f'- {int(percent_bank * 100)}%({shell_money(btc * percent_bank, "btc")}'
+                                     f'- {int(percent_bank * 100)}%({shell_num(btc * percent_bank, "btc")}'
                                      f'BTC) - получил '
                                      f'банк за '
                                      f'транзакцию\n\n '
-                                     f'Итого: {shell_money(btc_with_fee, "btc")}BTC', reply_markup=keyboard_default.main_page)
+                                     f'Итого: {shell_num(btc_with_fee, "btc")}BTC', reply_markup=keyboard_default.main_page)
                 
                 await state.finish()
                 BotDB.update_user_state(message.from_user.id)
@@ -600,9 +600,9 @@ async def q1(message: Message, state: FSMContext):
             BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
             BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=-num)
             await message.answer(f'Сделка удалась!\n\n'
-                                 f'- {int(percent_bank * 100)}%({shell_money(usd * percent_bank)}$) - получил банк за '
+                                 f'- {int(percent_bank * 100)}%({shell_num(usd * percent_bank)}$) - получил банк за '
                                  f'транзакцию\n\n '
-                                 f'Итого: {shell_money(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
+                                 f'Итого: {shell_num(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
             
             await state.finish()
             BotDB.update_user_state(message.from_user.id)
@@ -619,9 +619,9 @@ async def q1(message: Message, state: FSMContext):
                 BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
                 BotDB.updateN(key='btc', where='id_user', meaning=message.from_user.id, num=0)
                 await message.answer(f'Сделка удалась!\n\n'
-                                     f'- {int(percent_bank * 100)}%({shell_money(usd * percent_bank)}$) - получил '
+                                     f'- {int(percent_bank * 100)}%({shell_num(usd * percent_bank)}$) - получил '
                                      f'банк за транзакцию\n\n '
-                                     f'Итого: {shell_money(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
+                                     f'Итого: {shell_num(usd_with_fee)}$', reply_markup=keyboard_default.main_page)
                 
                 await state.finish()
                 BotDB.update_user_state(message.from_user.id)
@@ -654,8 +654,8 @@ async def referal_invite(message: Message):
                          f'Чтобы реферал приносил вам доход, ему необходимо пройти <b>верификацию*</b>, '
                          f'по завершению которой '
                          f'каждая из сторон получит единоразовое вознаграждение\n\n'
-                         f'- Вы ➡️ <b>{shell_money(award_referrer)}</b>$\n'
-                         f'- Реферал ➡️ <b>{shell_money(award_referral)}</b>$\n\n'
+                         f'- Вы ➡️ <b>{shell_num(award_referrer)}</b>$\n'
+                         f'- Реферал ➡️ <b>{shell_num(award_referral)}</b>$\n\n'
                          f'Вот ваша уникальная ссылка \n{referrer_linc(message.from_user.id)}\n'
                          f'Скопируйте её и отправте человеку, которого хотите пригласить в игру!\n\n'
                          f'* - узнать подробнее в /FAQ\n'
@@ -693,12 +693,12 @@ async def bonus(message: Message):
 #                f'<i>Название:</i> {name_company}\n\n' \
 #                f'<i>Помещение:</i> {workplace}\n' \
 #                f'<i>Оборудование:</i> {comp}\n\n' \
-#                f'<i>Доход:</i> {shell_money(income)} руб./мин.\n\n' \
+#                f'<i>Доход:</i> {shell_num(income)} руб./мин.\n\n' \
 #                f'Кол-во➡️\n' \
-#                f'├<i>пользователей:</i> {shell_money(users)}\n' \
-#                f'├<i>выпущенного ПО:</i> {shell_money(apps)}\n' \
-#                f'├<i>data-centre:</i> {shell_money(dataC)}\n' \
-#                f'└<i>сотрудников:</i> {shell_money(staff)}\n'
+#                f'├<i>пользователей:</i> {shell_num(users)}\n' \
+#                f'├<i>выпущенного ПО:</i> {shell_num(apps)}\n' \
+#                f'├<i>data-centre:</i> {shell_num(dataC)}\n' \
+#                f'└<i>сотрудников:</i> {shell_num(staff)}\n'
 #     elif type_company == '':
 #         pass
 #     elif type_company == '':
@@ -776,10 +776,10 @@ async def bonus(message: Message):
 #                       get(table='it_company', key='PofP', where='id_founder', meaning=message.from_user.id) / 100
 #             expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pJunior')
 #             await message.answer(f'<b>Junior</b> програмист\n\n'
-#                                  f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n'
-#                                  f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n'
+#                                  f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n'
+#                                  f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n'
 #                                  f'<i>Требования</i>: {rText}\n\n'
-#                                  f'У тебя работают: {shell_money(countJunior)} чел.', reply_markup=programmists_j)
+#                                  f'У тебя работают: {shell_num(countJunior)} чел.', reply_markup=programmists_j)
 #         elif text == "Открыть data-centre":
 #             pass
 #         elif text == "Улучшить оборудование":
@@ -871,10 +871,10 @@ async def bonus(message: Message):
 #                   get(table='it_company', key='PofP', where='id_founder', meaning=call.from_user.id) / 100
 #         expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pJunior')
 #         text = f'<b>Junior</b> програмист\n\n' \
-#                f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                f'<i>Требования</i>: {rText}\n\n' \
-#                f'У тебя работают: {shell_money(countJunior)} чел.'
+#                f'У тебя работают: {shell_num(countJunior)} чел.'
 #         try:
 #             await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id, text=text,
 #                                         reply_markup=programmists_j)
@@ -893,10 +893,10 @@ async def bonus(message: Message):
 #                   get(table='it_company', key='PofP', where='id_founder', meaning=call.from_user.id) / 100
 #         expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pMiddle')
 #         text = f'<b>Middle</b> програмист\n\n' \
-#                f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                f'<i>Требования</i>: {rText}\n\n' \
-#                f'У тебя работают: {shell_money(countMiddle)} чел.'
+#                f'У тебя работают: {shell_num(countMiddle)} чел.'
 #         try:
 #             await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id, text=text,
 #                                         reply_markup=programmists_m)
@@ -915,10 +915,10 @@ async def bonus(message: Message):
 #                   get(table='it_company', key='PofP', where='id_founder', meaning=call.from_user.id) / 100
 #         expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pSenior')
 #         text = f'<b>Senior</b> програмист\n\n' \
-#                f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                f'<i>Требования</i>: {rText}\n\n' \
-#                f'У тебя работают: {shell_money(countSenior)} чел.'
+#                f'У тебя работают: {shell_num(countSenior)} чел.'
 #         try:
 #             await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id, text=text,
 #                                         reply_markup=programmists_s)
@@ -949,8 +949,8 @@ async def bonus(message: Message):
 
 #                     add(table='it_company', key='count_junior', where='id_founder', meaning=call.from_user.id,
 #                         num=1)
-#                     text = f'Первая оплата была произведена за {shell_money(time_work_min)}мин. ' \
-#                            f'{shell_money(time_work_sec)}сек. = {shell_money(time_money)}руб. работы программиста, ' \
+#                     text = f'Первая оплата была произведена за {shell_num(time_work_min)}мин. ' \
+#                            f'{shell_num(time_work_sec)}сек. = {shell_num(time_money)}руб. работы программиста, ' \
 #                            f'после она будет взиматься ' \
 #                            f'ровно каждый час❗️'
 #                     try:
@@ -993,8 +993,8 @@ async def bonus(message: Message):
 
 #                     add(table='it_company', key='count_middle', where='id_founder', meaning=call.from_user.id,
 #                         num=1)
-#                     text = f'Первая оплата была произведена за {shell_money(time_work_min)}мин. ' \
-#                            f'{shell_money(time_work_sec)}сек. = {shell_money(time_money)}руб. работы программиста, ' \
+#                     text = f'Первая оплата была произведена за {shell_num(time_work_min)}мин. ' \
+#                            f'{shell_num(time_work_sec)}сек. = {shell_num(time_money)}руб. работы программиста, ' \
 #                            f'после она будет взиматься ' \
 #                            f'ровно каждый час❗️'
 #                     try:
@@ -1037,8 +1037,8 @@ async def bonus(message: Message):
 
 #                     add(table='it_company', key='count_senior', where='id_founder', meaning=call.from_user.id,
 #                         num=1)
-#                     text = f'Первая оплата была произведена за {shell_money(time_work_min)}мин. ' \
-#                            f'{shell_money(time_work_sec)}сек. = {shell_money(time_money)}руб. работы программиста, ' \
+#                     text = f'Первая оплата была произведена за {shell_num(time_work_min)}мин. ' \
+#                            f'{shell_num(time_work_sec)}сек. = {shell_num(time_money)}руб. работы программиста, ' \
 #                            f'после она будет взиматься ' \
 #                            f'ровно каждый час❗️'
 #                     try:
@@ -1062,10 +1062,10 @@ async def bonus(message: Message):
 #                   get(table='it_company', key='PofP', where='id_founder', meaning=call.from_user.id) / 100
 #         expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pJunior')
 #         text = f'<b>Junior</b> програмист\n\n' \
-#                f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                f'<i>Требования</i>: {rText}\n\n' \
-#                f'У тебя работают: {shell_money(countJunior)} чел.'
+#                f'У тебя работают: {shell_num(countJunior)} чел.'
 #         try:
 #             await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id, text=text,
 #                                         reply_markup=programmists_j)
@@ -1083,10 +1083,10 @@ async def bonus(message: Message):
 #                   get(table='it_company', key='PofP', where='id_founder', meaning=call.from_user.id) / 100
 #         expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pMiddle')
 #         text = f'<b>Middle</b> програмист\n\n' \
-#                f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                f'<i>Требования</i>: {rText}\n\n' \
-#                f'У тебя работают: {shell_money(countJunior)} чел.'
+#                f'У тебя работают: {shell_num(countJunior)} чел.'
 #         try:
 #             await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id, text=text,
 #                                         reply_markup=programmists_m)
@@ -1104,10 +1104,10 @@ async def bonus(message: Message):
 #                   get(table='it_company', key='PofP', where='id_founder', meaning=call.from_user.id) / 100
 #         expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pSenior')
 #         text = f'<b>Senior</b> програмист\n\n' \
-#                f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                f'<i>Требования</i>: {rText}\n\n' \
-#                f'У тебя работают: {shell_money(countJunior)} чел.'
+#                f'У тебя работают: {shell_num(countJunior)} чел.'
 #         try:
 #             await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id, text=text,
 #                                         reply_markup=programmists_s)
@@ -1128,10 +1128,10 @@ async def bonus(message: Message):
 #                 num=-1 * round(pIncome, 2))
 #             expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pJunior')
 #             text = f'<b>Junior</b> програмист\n\n' \
-#                    f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                    f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                    f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                    f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                    f'<i>Требования</i>: {rText}\n\n' \
-#                    f'У тебя работают: {shell_money(countP)} чел.'
+#                    f'У тебя работают: {shell_num(countP)} чел.'
 #             try:
 #                 await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id,
 #                                             text=text,
@@ -1158,10 +1158,10 @@ async def bonus(message: Message):
 #                 num=-1 * round(pIncome, 2))
 #             expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pMiddle')
 #             text = f'<b>Middle</b> програмист\n\n' \
-#                    f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                    f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                    f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                    f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                    f'<i>Требования</i>: {rText}\n\n' \
-#                    f'У тебя работают: {shell_money(countP)} чел.'
+#                    f'У тебя работают: {shell_num(countP)} чел.'
 #             try:
 #                 await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id,
 #                                             text=text,
@@ -1188,10 +1188,10 @@ async def bonus(message: Message):
 #                 num=-1 * round(pIncome, 2))
 #             expenditure = get(table='value_it', key='matter_int2', where='name', meaning='pSenior')
 #             text = f'<b>Senior</b> програмист\n\n' \
-#                    f'<i>Прибыль</i>: {shell_money(pIncome)} руб./мин\n' \
-#                    f'<i>Зарплата</i>: {shell_money(expenditure)} руб./час\n' \
+#                    f'<i>Прибыль</i>: {shell_num(pIncome)} руб./мин\n' \
+#                    f'<i>Зарплата</i>: {shell_num(expenditure)} руб./час\n' \
 #                    f'<i>Требования</i>: {rText}\n\n' \
-#                    f'У тебя работают: {shell_money(countP)} чел.'
+#                    f'У тебя работают: {shell_num(countP)} чел.'
 #             try:
 #                 await bot.edit_message_text(message_id=call.message.message_id, chat_id=call.from_user.id,
 #                                             text=text,

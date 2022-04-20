@@ -84,13 +84,13 @@ def office_dev(index):
 def device():
     device =  InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text=get_button('i8.5.1'), callback_data=f'device_item:screen'), InlineKeyboardButton(text=get_button('i8.5.2'), callback_data=f'device_item:keyboard')          
+            InlineKeyboardButton(text=get_button('i8.5.1'), callback_data=f'device_item:1'), InlineKeyboardButton(text=get_button('i8.5.2'), callback_data=f'device_item:2')          
         ],
         [
-            InlineKeyboardButton(text=get_button('i8.5.3'), callback_data=f'device_item:mouse'), InlineKeyboardButton(text=get_button('i8.5.4'), callback_data=f'device_item:carpet')    
+            InlineKeyboardButton(text=get_button('i8.5.3'), callback_data=f'device_item:3'), InlineKeyboardButton(text=get_button('i8.5.4'), callback_data=f'device_item:4')    
         ],
         [
-            InlineKeyboardButton(text=get_button('i8.5.5'), callback_data=f'device_item:comp'), InlineKeyboardButton(text=get_button('i8.5.6'), callback_data=f'device_item:armchair')
+            InlineKeyboardButton(text=get_button('i8.5.5'), callback_data=f'device_item:5'), InlineKeyboardButton(text=get_button('i8.5.6'), callback_data=f'device_item:6')
         ]
     ])
     return device
@@ -117,7 +117,7 @@ def test_viev():
     ])
     return test_viev
 
-def create_first_app():
+def create_app():
     create_first_app =  InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text=get_button('i8.1.3'), callback_data=f'app:create_app')
