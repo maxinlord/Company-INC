@@ -44,8 +44,8 @@ class BotDB:
         self.cur.execute(f"INSERT INTO {table} (id_company, name_founder) VALUES (?,?)", (id_user, name))
         return self.conn.commit()
     
-    def add_stocks(self, id_company, name_company, piece_of_income, count_stocks, count_stocks_stay, price_one_stocks, seller):
-        self.cur.execute(f"INSERT INTO stocks (id_company, name_company, piece_of_income, count_stocks, count_stocks_stay, price_one_stocks, seller) VALUES (?,?,?,?,?,?,?)", (id_company, name_company, piece_of_income, count_stocks, count_stocks_stay, price_one_stocks, seller))
+    def add_stocks(self, id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income):
+        self.cur.execute(f"INSERT INTO stocks (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income) VALUES (?, ?, ?, ?, ?, ?)", (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income))
         return self.conn.commit()
 
     def add(self, key, where, meaning, table='users', num=0):
@@ -77,7 +77,7 @@ class BotDB:
 
     def delete(self, where, meaning, table='users'):
         '''Позволяет удалить любые значение из БД'''
-        self.cur.execute(f'DELETE FROM {table} WHERE {where} = {meaning}')
+        self.cur.execute(f'DELETE FROM {table} WHERE {where} = "{meaning}"')
         return self.conn.commit()
 
     def updateT(self, key, where, meaning, table='users', text=''):

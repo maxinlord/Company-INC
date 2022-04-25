@@ -44,12 +44,12 @@ def get_items():
 def update_and_convert():
     update_and_convert = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text=get_button('i2.1'), callback_data='ru'),
-            InlineKeyboardButton(text=get_button('i2.2'), callback_data='ur'),
-            InlineKeyboardButton(text=get_button('i2.3'), callback_data='ub')
+            InlineKeyboardButton(text=get_button('i2.1'), callback_data='rub_usd'),
+            InlineKeyboardButton(text=get_button('i2.2'), callback_data='usd_rub'),
+            InlineKeyboardButton(text=get_button('i2.3'), callback_data='usd_btc')
         ],
         [
-            InlineKeyboardButton(text=get_button('i2.4'), callback_data='bu'),
+            InlineKeyboardButton(text=get_button('i2.4'), callback_data='btc_usd'),
             InlineKeyboardButton(text=get_button('i2.5'), callback_data='update')
         ]
     ])
@@ -195,13 +195,13 @@ def marketing_lab_open_back(type):
     return data_centre_open_back
 
 
-def create_first_stocks():
-    create_first_stocks =  InlineKeyboardMarkup(inline_keyboard=[
+def create_stocks():
+    create_stocks =  InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text=get_button('i3.2.1'), callback_data=f'stocks:create_first_stocks')
+            InlineKeyboardButton(text=get_button('i3.2.1'), callback_data=f'stocks:create_stocks')
         ]
     ])
-    return create_first_stocks
+    return create_stocks
 
 
 def back_forward_page_stocks(page):

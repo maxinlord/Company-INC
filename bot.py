@@ -2,13 +2,9 @@ import time
 import asyncio
 import aioschedule
 from aiogram import executor
-from db import BotDB
-from all_function import rate_btc, rate_usd, verify
-from dispatcher import dp
+from all_function import rate_currency, verify
+from dispatcher import dp, BotDB
 from handlers import *
-
-
-BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
 async def job_sec():
     pass
@@ -16,8 +12,7 @@ async def job_sec():
 async def job_minute():
     date = time.strftime('%X').split(':')
     if date[2] == '00':
-        rate_usd()
-        rate_btc()
+        rate_currency()
         await verify()
     else:
         pass
@@ -57,6 +52,6 @@ async def on_startup(x):
 
 if __name__ == '__main__':
     try:
-        executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+        executor.start_polling(dp, skip_updates=False, on_startup=on_startup)
     except Exception as e:
         pass

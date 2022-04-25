@@ -1,4 +1,4 @@
-from ctypes import Union
+
 import datetime
 from itertools import count
 from pprint import pprint
@@ -6,17 +6,14 @@ import random
 import string
 import types
 from typing import List, Tuple, Union
-from db import BotDB
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
+from dispatcher import bot, BotDB
 from aiogram import types
-from dispatcher import bot
 from all_states import Ban_User
 import time
 import re
-
-BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
 
 
 # #########################################
@@ -314,20 +311,15 @@ def get_photo(unique_name) -> str:
 
 # #########################################
 
-def create_2dot_data(table, key, where, meaning, headers=[], d=[]):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
-    h = ':'.join(headers)
-    if get_data:
-        get_data if h == get_data.split(',')[0] else h + get_data
-    else:
-        get_data = h + get_data
-    s = ',' + ':'.join(d)
-    adding = get_data.strip(',') + s
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=adding.strip(','))
+def create_2dot_data(table, key, where, meaning, d=[]):
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
+    s = ',' + ':'.join(list(map(lambda x: str(x), d)))
+    adding = get_data + s
+    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=adding)
 
 
 def parse_2dot_data(table, key, where, meaning) -> List[list]: 
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     l1 = []
     l2 = []
@@ -342,18 +334,18 @@ def parse_2dot_data(table, key, where, meaning) -> List[list]:
 
 def get_2dot_data(table, key, where, meaning, where_data: str = 'id', get_data: str = 'id', meaning_data: str = '0'):
     try:
-        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table).strip(',')
         ind = parse[0].index(where_data)
         ind_get = parse[0].index(get_data)
     except Exception as e:
         return print('Ошибка!\nФункция: get_2dot_data') 
     for i in parse[1:]:
-        if i[ind] == int(meaning_data):
+        if str(i[ind]) == str(meaning_data):
             return i[ind_get]
 
 def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_data: str = 'id', meaning_data: str = '0'):
     try:
-        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table).strip(',')
         ind = parse[0].index(where_data)
         ind_add = parse[0].index(add_data)
     except Exception as e:
@@ -367,7 +359,7 @@ def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_d
 
 
 def delete_2dot_data(table, key, where, meaning, unique_value_data):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     headers = l[0]
     s = ''
@@ -379,7 +371,7 @@ def delete_2dot_data(table, key, where, meaning, unique_value_data):
 
 
 def update_item_2dot_data(table, key, where, meaning, item, where_data = 0, meaning_data = '0', change_index=0):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     s = ''
     for i in l:
@@ -391,7 +383,7 @@ def update_item_2dot_data(table, key, where, meaning, item, where_data = 0, mean
 
 
 def add_header_2dot_data(table, key, where, meaning, name_new_header):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     l_new = []
     l_new.append(l[0] + ':' + name_new_header)
@@ -402,12 +394,11 @@ def add_header_2dot_data(table, key, where, meaning, name_new_header):
 
 def delete_header_2dot_data(table, key, where, meaning, name_header):
     try:
-        get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
+        get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
         l: list = get_data.split(',')
         ind = l[0].split(':').index(name_header)
     except Exception as e:
         return print('Ошибка!\nФункция: delete_header_2dot_data') 
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table)
     l: list = get_data.split(',')
     l_new = []
     ind = l[0].split(':').index(name_header)
@@ -498,26 +489,48 @@ def check_emptys(id_user):
     except:
         answ = True
     return answ
-        
-def error_reg(func):
-    async def wrapper(message: types.Message):
-        if check_emptys(message.from_user.id):
-            clean_error_reg_company(message.from_user.id)
-            text1 = get_text('exist_user1', format=False)
-            await message.answer(text1, reply_markup=ReplyKeyboardRemove())  
-        else:
-            return await func(message)
-    return wrapper
 
-def error_reg_call(func):
-    async def wrapper(call: CallbackQuery):
-        if check_emptys(call.from_user.id):
-            clean_error_reg_company(call.from_user.id)
-            text1 = get_text('exist_user1', format=False)
-            await bot.send_(text1, reply_markup=ReplyKeyboardRemove())  
+def error_reg(state=False):      
+    def wrapper1(func):
+        if state:
+            async def wrapper2(message: types.Message, state: FSMContext):
+                if check_emptys(message.from_user.id):
+                    clean_error_reg_company(message.from_user.id)
+                    text1 = get_text('exist_user1', format=False)
+                    await message.answer(text1, reply_markup=ReplyKeyboardRemove())  
+                else:
+                    return await func(message, state)
         else:
-            return await func(call)
-    return wrapper
+            async def wrapper2(message: types.Message):
+                if check_emptys(message.from_user.id):
+                    clean_error_reg_company(message.from_user.id)
+                    text1 = get_text('exist_user1', format=False)
+                    await message.answer(text1, reply_markup=ReplyKeyboardRemove())  
+                else:
+                    return await func(message)
+        return wrapper2
+    return wrapper1
+
+def error_reg_call(state=False):
+    def wrapper1(func):
+        if state:
+            async def wrapper2(call: CallbackQuery, state: FSMContext):
+                if check_emptys(call.from_user.id):
+                    clean_error_reg_company(call.from_user.id)
+                    text1 = get_text('exist_user1', format=False)
+                    await bot.send_message(text1, reply_markup=ReplyKeyboardRemove())  
+                else:
+                    return await func(call, state)
+        else:
+            async def wrapper2(call: CallbackQuery):
+                if check_emptys(call.from_user.id):
+                    clean_error_reg_company(call.from_user.id)
+                    text1 = get_text('exist_user1', format=False)
+                    await bot.send_message(text1, reply_markup=ReplyKeyboardRemove())  
+                else:
+                    return await func(call)
+        return wrapper2
+    return wrapper1
 
 # #########################################
 
@@ -594,69 +607,87 @@ def check_name_company(name_company):
 
 # #########################################
 
+def i_have_stocks(id_user: int) -> bool:
+    try:
+        parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=id_user)[1]
+        return True
+    except:
+        return False
+
+def get_quantity_stocks_currently(id_stocks: int) -> int:
+    data = BotDB.get_alls(keys='seller, id_stocks, quantity_stocks', table='stocks')
+    return int([i[2] for i in data if i[0] == i[1]][0])
+
+
+def stocks_exist(id_company: int) -> bool:
+    if int(BotDB.get(key='count_make_stocks', where='id_user', meaning=id_company)) == 0:
+        return False
+    return True
+
 def get_your_stocks(id_user):
     t = ''
     number_string = 1
     parse = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=id_user)[1:]
     for x in parse:
         d = {
+            'id_slot': shell_num(x[0], signs=False),
             'number_string': number_string,
-            'id_company':shell_num(x[0], currency='id'),
-            'name_company':x[1],
-            'quantity_stocks':shell_num(x[2]),
-            'price_buy': shell_num(x[3])
+            'name_company':x[2],
+            'quantity_stocks':shell_num(x[3]),
+            'price_buy': shell_num(x[4])
         }
         t += get_text('template_string_my_stocks', format=True, d=d)
         number_string += 1
     return t
 
-def update_rating_stocks(id_company):
+def update_rating_stocks(id_slot):
     rating = 0 
     for i in BotDB.get_all(key='id_user'):
         try:
-            parse = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=i)
+            parse = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=i)[1:]
             for x in parse:
-                if id_company in x:
+                if id_slot in x:
                     rating += 1
         except Exception as e:
             pass
-    BotDB.updateN(key='rating', where='id_company', meaning=id_company, table='stocks', num=rating)
+    BotDB.updateN(key='rating', where='id_slot', meaning=id_slot, table='stocks', num=rating)
 
 def list_stocks(page=1):
     t = ''
-    data = BotDB.get_alls_with_order('id_company, name_company, count_stocks_stay, price_one_stocks, piece_of_income, count_stocks, seller', order='rating', table='stocks')
+    data = [i for i in BotDB.get_alls_with_order('id_slot, id_stocks, quantity_stocks, price_one_stock, percent_of_income, seller', order='rating', table='stocks') if i[1] > 0]
     count_string = BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     for i in list(data):
-        if len(data)/BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main') >= 1:
-            if i[2] > 0:
-                if data.index(i) >= (page-1) * count_string and data.index(i)+1 <= page * count_string:
-                    d = {
-                        'id_company': shell_num(i[0], currency='id'),
-                        'name_company': i[1],
-                        'count_stocks_stay': shell_num(i[2]),
-                        'price_one_stocks': shell_num(i[3]),
-                        'percent': round(i[4]/i[5] * 100, 4),
-                        'seller': BotDB.get(key='name_company', where='id_company', meaning=i[-1], table='stocks')
-                        }
-                    t += get_text('template_one_string_stocks', format=True, d=d) if i[-1] == i[0] else get_text('template_one_string_sell_stocks', format=True, d=d)
-            else:
-                data.remove(i)
-        else:
-            if i[2] > 0:
+        if (len(data) / count_string) >= 1:
+            if (page-1) * count_string <= data.index(i) < page * count_string:
+                quantity_stocks = BotDB.get(key='count_make_stocks', where='id_user', meaning=i[1])
+                percent = round(float((i[4]/quantity_stocks) * 100), 6)
+                signs = len(str(percent).strip('0').split('.')[1])
+                type_of_a = BotDB.get(key='type_of_activity', where='id_user', meaning=i[1])
                 d = {
-                    'id_company': shell_num(i[0], currency='id'),
-                    'name_company': i[1],
-                    'count_stocks_stay': shell_num(i[2]),
-                    'price_one_stocks': shell_num(i[3]),
-                    'percent': round(i[4]/i[5] * 100, 4),
-                    'seller': BotDB.get(key='name_company', where='id_company', meaning=i[-1], table='stocks')
+                    'id_slot': shell_num(i[0], signs=False),
+                    'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-1]),
+                    'quantity_stocks': shell_num(i[2]),
+                    'price_one_stock': shell_num(i[3]),
+                    'percent': shell_num(percent, q_signs_after_comma=signs),
+                    'name_company': BotDB.get(key='name_company', where='id_company', meaning=i[1], table=type_of_a)
                     }
-                t += get_text('template_one_string_stocks', format=True, d=d) if i[-1] == 0 else get_text('template_one_string_sell_stocks', format=True, d=d)
-            else:
-                data.remove(i)
+                t += get_text('template_one_string_stocks', format=True, d=d) if i[-1] == i[1] else get_text('template_one_string_sell_stocks', format=True, d=d)
+        else:
+            print(5)
+            percent = round(float((i[4]/i[2]) * 100), 6)
+            signs = len(str(percent).strip('0').split('.')[1])
+            type_of_a = BotDB.get(key='type_of_activity', where='id_user', meaning=i[1])
+            d = {
+                'id_slot': shell_num(i[0], signs=False),
+                'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-1]),
+                'quantity_stocks': shell_num(i[2]),
+                'price_one_stock': shell_num(i[3]),
+                'percent': shell_num(percent, q_signs_after_comma=signs),
+                'name_company': BotDB.get(key='name_company', where='id_company', meaning=i[1], table=type_of_a)
+                }
+            t += get_text('template_one_string_stocks', format=True, d=d) if i[-1] == i[1] else get_text('template_one_string_sell_stocks', format=True, d=d)
 
     return t.strip('\n')
-
 
 # #########################################
 
@@ -666,7 +697,7 @@ def available(id_user: int, price_item: Union[int, float], currency: str ='rub')
     return quantity_available
 # #########################################
 
-def shell_num(num: Union[int, float], q_signs_after_comma: int = 2, signs: bool =True):
+def shell_num(num: Union[int, float], q_signs_after_comma: int = 2, signs: bool =True) -> str:
     if signs:
         num = round(num, q_signs_after_comma)
         if isfloat(str(num)):
@@ -675,7 +706,7 @@ def shell_num(num: Union[int, float], q_signs_after_comma: int = 2, signs: bool 
         return '<code>{:,}</code>'.format(int(num))
     return '<code>{}</code>'.format(num)
 
-def cleannum(numb):
+def cleannum(numb: str) -> str:
     numb = re.sub("[!\"#$%&'()*+,/\\\:;<=>?@[\]^`{|}~]", '', numb)
     numb = re.sub('[^\x00-\x7F]', '', numb)
     numb = re.sub('[а-яА-ЯёЁ]', '', numb)
@@ -686,7 +717,7 @@ def cleannum(numb):
     except: return ' ' 
 
 
-def currency_calculation(money, what_calculate='rub_in_usd', currency='rate_usd'):
+def currency_calculation(money: Union[int, float], what_calculate: str ='rub_in_usd', currency: str ='rate_usd') -> Tuple[float, float]:
     '''Конвертирует валюты'''
     rate = BotDB.vCollector(table='value_main', where='name', meaning=currency)
     if what_calculate == 'rub_in_usd':
@@ -694,14 +725,14 @@ def currency_calculation(money, what_calculate='rub_in_usd', currency='rate_usd'
     elif what_calculate == 'usd_in_btc':
         result = round(money / rate, 5)
     elif what_calculate == 'usd_in_rub':
-        result = int(money * rate)
+        result = round(money * rate, 2)
     elif what_calculate == 'btc_in_usd':
-        result = round(money * rate,2)
-    return result
+        result = round(money * rate, 2)
+    return result, rate
 
 # #########################################
 
-def isfloat(num):
+def isfloat(num: str) -> bool:
     if num.isdigit():
         return False
     else:
@@ -711,36 +742,8 @@ def isfloat(num):
         except:
             return False
 
+
 # #########################################
-
-def get_minpercent(type_money,update=False) -> int:
-
-    users = BotDB.get_all('id_user')
-    type_average_percent = type_money + '_average_percent'
-    all_average_percent =  BotDB.get_all(type_average_percent)
-    sum_perc = 0
-
-    for i in all_average_percent:
-        idx = all_average_percent.index(i)
-        if i:
-            list_minpercent = [i for i in i.split(';') if i]
-            sum_perc = 0
-            text_box = []
-            for i in list_minpercent:
-                list_box = i.split(',')
-                percent = float(list_box[1])
-                min = int(list_box[0])
-                if min == 0:
-                    text_box.append('')
-                else:
-                    sum_perc += percent
-                    text_box.append(f'{min-1},{percent}')
-            if update:
-                text_box = [i for i in text_box if i != '']
-                text = ';'.join(text_box)
-                BotDB.updateT(key=type_average_percent, where='id_user', meaning=users[idx], text=text)
-
-    return sum_perc
 
 def check_graf_rate(dimension):
     '''Проверяет кол-во записей курсов usd and btc в БД, если оно превышает установленую размерность, тогда самая старая запись удаляется'''
@@ -751,14 +754,55 @@ def check_graf_rate(dimension):
         BotDB.delete('id', result_btc[0], 'graf_rate_btc')
 
 
-def add_minperc(id_user, type_money, percent, min=15):
-    type_average_percent = type_money + '_average_percent'
-    text = f';{min},{percent}'
-    old_text = BotDB.get(key=type_average_percent, where='id_user', meaning=id_user)
-    BotDB.updateT(key=type_average_percent, where='id_user', meaning=id_user, text=old_text+text) 
+def update_carrency_influence(random_percent_usd=0, random_percent_btc=0):
+    sum_percent_decimal_usd = 0
+    sum_percent_decimal_btc = 0
+    users_id= BotDB.get_all(key='id_user')
+    rate_usd = BotDB.vCollector(table='value_main', where='name', meaning='rate_usd')
+    rate_btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
+    for i in users_id:
+        for j in parse_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=i)[1:]:
+            try:
+                j[3]
+            except:
+                break
+            if j[2] == 0:
+                delete_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=i, unique_value_data=j[0])
+                continue
+            elif j[1] == 'rate_usd':
+                sum_percent_decimal_usd += j[3]
+                add_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=i, meaning_data=str(j[0]), add_data='min', add=-1)
+                continue
+            sum_percent_decimal_btc += j[3]
+            add_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=i, meaning_data=str(j[0]), add_data='min', add=-1)
+
+    usd = (1 + random_percent_usd + sum_percent_decimal_usd) * rate_usd  #просчитываем курс учитывая проценты
+    btc = (1 + random_percent_btc + sum_percent_decimal_btc) * rate_btc 
+    d = {'rate_usd': [usd, random_percent_usd + sum_percent_decimal_usd, rate_usd], 'rate_btc': [btc, random_percent_btc + sum_percent_decimal_btc, rate_btc]}
+    for i in d: 
+        BotDB.updateN(table='value_main', key='main_num', where='name', meaning=i, num=round(d[i][0], 2))
+        tag = taG(len=12)
+        BotDB.updateT(key='text_box2', where='name', meaning=f'{i}_unique_id', text=tag, table='value_main')
+        sum_percent_decimal = d[i][1]
+        rate = d[i][2]
+        
+        _ = i.split('_')[1]
+
+        type_rate_now_text = i + '_now' #генерируем нужные нам текста для обращения в БД
+        type_percent_text = 'perc_' + _
+        type_graf_rate_text = 'graf_rate_' + _
+        
+
+        date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
+        percent_to_text = f"{sum_percent_decimal * 100}"
+        
+        BotDB.cur.execute(f'INSERT INTO "{type_graf_rate_text}" (id, time_update, {i}, {type_percent_text}, {type_rate_now_text}) VALUES (?,?,?,?,?)',(tag, date, rate, percent_to_text, round(d[i][0], 2)))
+        BotDB.conn.commit() 
+    dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate')  
+    check_graf_rate(dimension_graf_rate)
 
 
-def exchange_balans(id_user, count_money, type_currency='rate_usd'):
+def exchange_balans(id_user: int, count_money: Union[int, float], type_currency: str ='rate_usd'):
     dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate') #размерность данных для графика
     
     abs_money = abs(count_money) #берем по модулю наши деньги
@@ -767,37 +811,32 @@ def exchange_balans(id_user, count_money, type_currency='rate_usd'):
     all_money_people = BotDB.get_all(type_currency.split('_')[1]) #получаем все имеющиеся деньги указоного типа от всех юзеров
     
     if count_money > 0:
-        rate_currency = BotDB.vCollector(table='value_main', where='name', meaning=type_currency)
-        percent_decimal = round((abs_money / (sum(all_money_people) + abs_money)) / ratio, 4) #получаем десятичный процент, формула = наши_деньги / деньги_всех + наши_деньги / коеффициент скорости изменения курса
-        percent = percent_decimal * 100 #получаем проценты
-        add_minperc(id_user,type_currency.split('_')[1],percent,ratio-1) #записываем их в БД 
-
-        type_rate_now_text = type_currency + '_now' #генерируем нужные нам текста для обращения в БД
-        type_percent_text = 'perc_' + type_currency.split('_')[1] 
-        type_graf_rate_text = 'graf_rate_' + type_currency.split('_')[1] 
-        
-        sum_percent_decimal = get_minpercent(type_currency.split('_')[1]) / 100
-
-        currency = rate_currency + sum_percent_decimal * rate_currency #просчитываем курс учитывая проценты
-        BotDB.updateN(table='value_main', key='main_num', where='name', meaning=type_currency, num=round(currency, 2)) #записываем в БД текущий курс
-        
-        date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
-        percent_to_text = f"{sum_percent_decimal * 100}"
-      
-        BotDB.cur.execute(f'INSERT INTO "{type_graf_rate_text}" (time_update, {type_currency}, {type_percent_text}, {type_rate_now_text}) VALUES (?,?,?,?)',(date, rate_currency, percent_to_text, round(currency, 2)))
-        BotDB.conn.commit()
+        percent_decimal = round((abs_money / (sum(all_money_people) + abs_money)) / ratio, 6) #получаем десятичный процент, формула = наши_деньги / деньги_всех + наши_деньги / коеффициент скорости изменения курса
+        if percent_decimal != 0:
+            create_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=id_user, d=[taG(), type_currency, 15, percent_decimal]) #записываем их в БД 
+            update_carrency_influence()
     else:
-        percent = round((abs_money / (sum(all_money_people) + abs_money)) / ratio, 4) * 100
-        add_minperc(id_user,type_currency.split('_')[1],-percent,ratio) #записываем их в БД 
-    
+        percent_decimal = round((abs_money / (sum(all_money_people) + abs_money)) / ratio, 6)
+        if percent_decimal != 0:
+            create_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=id_user, d=[taG(), type_currency, 15, -percent_decimal]) #записываем их в БД 
+    check_graf_rate(dimension_graf_rate)
+
+
+def rate_currency():
+    dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate')
+
+    random_perc_usd = round(random.uniform(-1, 1), 2) / 100
+    random_perc_btc = round(random.uniform(-1, 1), 2) / 100
+    update_carrency_influence(random_perc_usd, random_perc_btc)
+
     check_graf_rate(dimension_graf_rate)
 
 # #########################################
 
-def taG():
+def taG(len=10):
     tagg = ''
     all = string.digits + string.ascii_letters
-    for i in range(0, 10):
+    for i in range(0, len):
         a = random.choice(all)
         tagg += a
     return tagg
@@ -818,106 +857,6 @@ def get_text(unique_name, d={}, format=True) -> str:
         text = BotDB.get(key='text_box1', where='name', meaning=unique_name, table='texts')
     text_true = text.format(**d) if format else text
     return f'({unique_name})\n\n' + text_true if mode == 'on' else text_true
-
-
-def check_graf_rate(dimension):
-    '''Проверяет кол-во записей курсов usd and btc в БД, если оно превышает установленую размерность, тогда самая старая запись удаляется'''
-    result_usd, result_btc = BotDB.get_all('id','graf_rate_usd'), BotDB.get_all('id','graf_rate_btc')
-    if len(result_usd) > dimension:
-        BotDB.delete('id', result_usd[0], 'graf_rate_usd')
-    elif len(result_btc) > dimension:
-        BotDB.delete('id', result_btc[0], 'graf_rate_btc')
-    else:
-        pass
-
-def get_minpercent(type_money,update=False) -> int:
-
-    users = BotDB.get_all('id_user')
-    type_average_percent = type_money + '_average_percent'
-    all_average_percent =  BotDB.get_all(type_average_percent)
-    sum_perc = 0
-
-    for i in all_average_percent:
-        idx = all_average_percent.index(i)
-        if i:
-            list_minpercent = [i for i in i.split(';') if i]
-            sum_perc = 0
-            text_box = []
-            for i in list_minpercent:
-                list_box = i.split(',')
-                percent = float(list_box[1])
-                min = int(list_box[0])
-                if min == 0:
-                    text_box.append('')
-                else:
-                    sum_perc += percent
-                    text_box.append(f'{min-1},{percent}')
-            if update:
-                text_box = [i for i in text_box if i != '']
-                text = ';'.join(text_box)
-                BotDB.updateT(key=type_average_percent, where='id_user', meaning=users[idx], text=text)
-        else:
-            pass
-
-    return sum_perc
-
-def rate_usd():
-    dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate')
-
-    usd = BotDB.vCollector(table='value_main', where='name', meaning='rate_usd')
-    sum_perc_decimal = get_minpercent('usd') / 100
-
-    random_perc_decimal = round(random.uniform(-1, 1), 2) / 100
-    
-    full_perc_decimal = random_perc_decimal + sum_perc_decimal
-    abs_full_perc_decimal = abs(full_perc_decimal)
-
-    if full_perc_decimal > 0:
-        usd_now = usd * full_perc_decimal + usd
-    else:
-        usd_now = usd - usd * abs_full_perc_decimal
-    
-    text = f"{full_perc_decimal * 100}"
-    
-    get_minpercent('usd',True)
-
-    BotDB.updateN(table='value_main', key='main_num', where='name', meaning='rate_usd', num=round(usd_now, 2))  
-    date = time.strftime('%X') + time.strftime(' %m/%d/%Y')  
-    BotDB.cur.execute(
-        f'INSERT INTO graf_rate_usd (time_update, rate_usd, perc_usd, rate_usd_now) VALUES (?,?,?,?)',(date, usd, text, round(usd_now, 2)))
-    BotDB.conn.commit()
-
-    check_graf_rate(dimension_graf_rate)
-
-
-
-def rate_btc():
-    dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate')
-
-    btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
-    sum_perc_decimal = get_minpercent('btc') / 100
-
-    random_perc_decimal = round(random.uniform(-1, 1), 2) / 100
-    
-    full_perc_decimal = random_perc_decimal + sum_perc_decimal
-    abs_full_perc_decimal = abs(full_perc_decimal)
-
-    if full_perc_decimal > 0:
-        btc_now = btc * full_perc_decimal + btc
-    else:
-        btc_now = btc - btc * abs_full_perc_decimal
-    
-    text = f"{full_perc_decimal * 100}"
-    
-    get_minpercent('btc',True)
-
-    BotDB.updateN(table='value_main', key='main_num', where='name', meaning='rate_btc', num=round(btc_now, 2))  
-    date = time.strftime('%X') + time.strftime(' %m/%d/%Y')  
-    BotDB.cur.execute(
-        f'INSERT INTO graf_rate_btc (time_update, rate_btc, perc_btc, rate_btc_now) VALUES (?,?,?,?)',(date, btc, text, round(btc_now, 2)))
-    BotDB.conn.commit()
-
-    check_graf_rate(dimension_graf_rate)
 
 
 async def verify():

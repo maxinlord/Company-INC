@@ -2,20 +2,18 @@ from curses import use_default_colors
 import time
 import datetime
 from aiogram.types import ReplyKeyboardRemove
-from aiogram.dispatcher.filters import Command, Text
-from aiogram.types import Message, ChatActions
+from aiogram.dispatcher.filters import Text
+from aiogram.types import Message
 from aiogram.dispatcher import FSMContext
 from aiogram import types
-from bot import BotDB
-from db import User
-from dispatcher import bot, dp
+from dispatcher import bot, dp, BotDB
 from keyboards.default import keyboard_default
 from keyboards.inline import keyboard_inline
 from aiogram.types import CallbackQuery
-from aiogram.types.input_media import InputMedia, InputMediaPhoto
+from aiogram.types.input_media import InputMediaPhoto
 from all_function import *
-from classes import DevSoftware
 from all_states import *
+from classes import DevSoftware
 
 
 
@@ -31,7 +29,7 @@ async def company_q1(message: Message, state: FSMContext):
 @dp.message_handler(Text(equals=get_button('8.1')), state=company_dev_software.Q1)
 @ban(state=True)
 @last_tap('-', state=True)
-async def create_app(message: Message):
+async def create_app(message: Message, state: FSMContext):
     try:
         BotDB.get(key='id_company', where='id_company', meaning=message.from_user.id, table='dev_software_apps')
         await message.answer(get_text('menu_create_apps', format=True, d=app_menu_data(message.from_user.id)), reply_markup=keyboard_inline.menu_apps())
@@ -857,7 +855,7 @@ async def sell_device2(message: Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'])
 @ban()
-@error_reg
+@error_reg()
 @last_tap(button='anytext')
 async def anytext(message: Message):
     await message.answer(get_text(unique_name='anytext', format=False), reply_markup=keyboard_default.main_page())

@@ -1,15 +1,15 @@
+from locale import currency
 from pprint import pprint
+from re import M
 import time
+from unittest.mock import call
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.dispatcher.filters import Command, Text
-from aiogram.types import Message
-from aiogram import types
+from aiogram.types import Message, Update, PollAnswer
 from aiogram.dispatcher import FSMContext
-from aiogram import types
-from classes import DevSoftware
-from dispatcher import dp, bot
-from bot import BotDB
-from db import User
+from aiohttp import ContentTypeError
+from classes import DevSoftware, User
+from dispatcher import dp, bot, BotDB
 from keyboards.default import keyboard_default
 from keyboards.inline import keyboard_inline
 from aiogram.types import CallbackQuery
@@ -148,14 +148,10 @@ async def q4(message: Message, state: FSMContext):
 
 @dp.message_handler(Command("manual"))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('manual')
 async def game_manual(message: Message):
     await message.answer(get_text('game_manual', format=False))
-
-@dp.message_handler(Command("test"))
-async def game_manual(message: Message):
-    await message.answer(get_text('test_viev', format=False), reply_markup=keyboard_inline.test_viev())
 
 
 @dp.message_handler(Command("reg"))
@@ -187,53 +183,48 @@ async def error_regg(message: Message):
 
 @dp.message_handler(Command('items'))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('items')
 async def items_menu(message: Message):
     await message.answer(get_text('items_menu', format=False), reply_markup=keyboard_inline.get_items())
 
-@dp.message_handler(Text('test'))
-async def crt_table(message: Message):
-    await message.answer(message.from_user.mention)
 
 @dp.message_handler(Text(equals=get_button('1')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('account')
 async def account_user(message: Message):
-    id_user = message.from_user.id
+    user = User(message.from_user.id)
     pic = get_photo('account')
-    rub = BotDB.get(key='rub', where='id_user', meaning=id_user)
-    usd = BotDB.get(key='usd', where='id_user', meaning=id_user)
-    btc = BotDB.get(key='btc', where='id_user', meaning=id_user)
-    text = get_text('account_user1', {'rub':shell_num(rub), 'usd':shell_num(usd), 'btc':shell_num(btc, "btc")})
+    rub = user.rub
+    usd = user.usd
+    btc = user.btc
+    text = get_text('account_user1', {'rub':shell_num(rub), 'usd':shell_num(usd), 'btc':shell_num(btc, q_signs_after_comma=5)})
     await message.answer_photo(pic, text)
 
 
 
 @dp.message_handler(Text(equals=get_button('2')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('bank')
 async def bank(message: Message):
-    id_user = message.from_user.id
+    user = User(message.from_user.id)
     pic = get_photo('bank')
-    usd = BotDB.get(key='usd', where='id_user', meaning=id_user)
-    btc = BotDB.get(key='btc', where='id_user', meaning=id_user)
-    rub = BotDB.get(key='rub', where='id_user', meaning=id_user)
-    rate_usd = BotDB.vCollector(table='value_main', where='name', meaning='rate_usd')
-    rate_btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
+    rub, usd, btc = user.rub, user.usd, user.btc
     time_ = time.strftime('%X').split()[0]
     sec = 60 - int(time_.split(':')[2])
-    percent_usd = BotDB.get(key='perc_usd', where='rate_usd_now', meaning=rate_usd, table='graf_rate_usd')
-    percent_btc = BotDB.get(key='perc_btc', where='rate_btc_now', meaning=rate_btc, table='graf_rate_btc')
+    rate_usd, rate_btc = [BotDB.vCollector(table='value_main', where='name', meaning=i) for i in ['rate_usd', 'rate_btc']]
+    tag_usd, tag_btc = [BotDB.get(key='text_box2', where='name', meaning=f'{i}_unique_id', table='value_main') for i in ['rate_usd', 'rate_btc']]
+    percent_usd = BotDB.get(key='perc_usd', where='id', meaning=tag_usd, table='graf_rate_usd')
+    percent_btc = BotDB.get(key='perc_btc', where='id', meaning=tag_btc, table='graf_rate_btc')
     str_with_sign_usd = f'{emodziside(percent_usd)}({shell_num(percent_usd)}%)'
     str_with_sign_btc = f'{emodziside(percent_btc)}({shell_num(percent_btc)}%)'
     d = {
         'sec':sec,
         'rub':shell_num(rub),
         'usd':shell_num(usd),
-        'btc':shell_num(btc, "btc"),
+        'btc':shell_num(btc, q_signs_after_comma=5),
         'rate_usd':shell_num(rate_usd),
         'rate_btc':shell_num(rate_btc),
         'percent_usd': str_with_sign_usd,
@@ -245,27 +236,25 @@ async def bank(message: Message):
 
 @dp.callback_query_handler(Text(equals='update'), state='*')
 @ban_call()
-@error_reg_call
+@error_reg_call()
 @last_tap_call('update')
 async def bank2(call: CallbackQuery):
     await call.answer(cache_time=0.7)
-    id_user = call.from_user.id
-    usd = BotDB.get(key='usd', where='id_user', meaning=id_user)
-    btc = BotDB.get(key='btc', where='id_user', meaning=id_user)
-    rub = BotDB.get(key='rub', where='id_user', meaning=id_user)
-    rate_usd = BotDB.vCollector(table='value_main', where='name', meaning='rate_usd')
-    rate_btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
+    user = User(call.from_user.id)
+    rub, usd, btc = user.rub, user.usd, user.btc
     time_ = time.strftime('%X').split()[0]
     sec = 60 - int(time_.split(':')[2])
-    percent_usd = BotDB.get(key='perc_usd', where='rate_usd_now', meaning=rate_usd, table='graf_rate_usd')
-    percent_btc = BotDB.get(key='perc_btc', where='rate_btc_now', meaning=rate_btc, table='graf_rate_btc')
+    rate_usd, rate_btc = [BotDB.vCollector(table='value_main', where='name', meaning=i) for i in ['rate_usd', 'rate_btc']]
+    tag_usd, tag_btc = [BotDB.get(key='text_box2', where='name', meaning=f'{i}_unique_id', table='value_main') for i in ['rate_usd', 'rate_btc']]
+    percent_usd = BotDB.get(key='perc_usd', where='id', meaning=tag_usd, table='graf_rate_usd')
+    percent_btc = BotDB.get(key='perc_btc', where='id', meaning=tag_btc, table='graf_rate_btc')
     str_with_sign_usd = f'{emodziside(percent_usd)}({shell_num(percent_usd)}%)'
     str_with_sign_btc = f'{emodziside(percent_btc)}({shell_num(percent_btc)}%)'
     d = {
         'sec':sec,
         'rub':shell_num(rub),
         'usd':shell_num(usd),
-        'btc':shell_num(btc, "btc"),
+        'btc':shell_num(btc, q_signs_after_comma=5),
         'rate_usd':shell_num(rate_usd),
         'rate_btc':shell_num(rate_btc),
         'percent_usd': str_with_sign_usd,
@@ -273,302 +262,201 @@ async def bank2(call: CallbackQuery):
         }
     text = get_text('bank1', d)
     try:
-        await bot.edit_message_caption(message_id=call.message.message_id, chat_id=id_user, caption=text,
+        await bot.edit_message_caption(message_id=call.message.message_id, chat_id=user.id, caption=text,
                                        reply_markup=keyboard_inline.update_and_convert())
     except Exception as e:
         pass
 
 
-@dp.callback_query_handler(Text(equals='ru'))
-@ban_call()
-@error_reg_call
-@last_tap_call('rub_usd')
-async def rub_usd1(call: CallbackQuery):
+@dp.callback_query_handler(Text(equals=['rub_usd', 'usd_rub', 'usd_btc', 'btc_usd']))
+@ban_call(state=True)
+@error_reg_call(state=True)
+@last_tap_call('-', state=True)
+async def exchange_currency1(call: CallbackQuery, state: FSMContext):
     await call.answer(cache_time=1)
     await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
-    await bot.send_message(call.from_user.id, get_text('rub_usd1', format=False), reply_markup=keyboard_default.exchange())
-    await exchange_rub_usd.Q1.set()
+    await bot.send_message(call.from_user.id, get_text(f'{call.data}_exchange_currency1', format=False), reply_markup=keyboard_default.exchange())
+    async with state.proxy() as data:
+        data['currency'] = call.data
+    await exchange_currency.Q1.set()
 
 
-@dp.message_handler(state=exchange_rub_usd.Q1)
+@dp.message_handler(state=exchange_currency.Q1)
 @last_tap('-', state=True)
-async def rub_usd2(message: Message, state: FSMContext):
-    rub = BotDB.get(key='rub', where='id_user', meaning=message.from_user.id)
+async def exchange_currency2(message: Message, state: FSMContext):
+    user = User(message.from_user.id)
+    data = await state.get_data()
+    left, right = data.get('currency').split('_')
+    signs_after_comma1 = 5 if left == 'btc' else 2
+    signs_after_comma2 = 5 if right == 'btc' else 2
+    left_sign, right_sign = [1, -1]
     percent_bank = BotDB.vCollector(table='value_main', where='name', meaning='percent_bank')
-    try:
-        num = round(float(message.text), 2)
-        if num <= rub:
-            
-            usd = currency_calculation(num)
-            exchange_balans(message.from_user.id,round(-usd,2))
-            usd_with_fee = usd - usd * percent_bank
-            BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
-            BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=-num)
-            d = {
-                'percent_bank':int(percent_bank * 100),
-                'get_bank':shell_num(usd * percent_bank),
-                'get_user':shell_num(usd_with_fee)
-                }
-            await message.answer(get_text('rub_usd2', d), reply_markup=keyboard_default.main_page())
-            await state.finish()
+    if cleannum(message.text).isdigit() or isfloat(cleannum(message.text)):
+        num = round(float(cleannum(message.text)), signs_after_comma1)
+        if num < 0:
+            await message.answer(get_text('exchange_currency2.condition1', format=False),reply_markup=keyboard_default.exchange())
+            return
+        if num == 0:
+            await message.answer(get_text('exchange_currency2.condition2', format=False),reply_markup=keyboard_default.exchange())
+            return
+        if num > BotDB.get(key=left, where='id_user', meaning=user.id):
+            await message.answer(get_text('exchange_currency2.condition3', format=False),reply_markup=keyboard_default.exchange())
+            return
+        if num < 1 and right == 'btc':
+            await message.answer(get_text('exchange_currency2.condition4', format=False),reply_markup=keyboard_default.exchange())
+            return
+        if right == 'rub' or left == 'rub':
+            currency, rate = currency_calculation(num, f'{left}_in_{right}')
+            sign = 1 if right == 'rub' else -1
+            exchange_balans(id_user=user.id, count_money=currency * sign)
         else:
-            await message.answer(get_text('rub_usd3', format=False),reply_markup=keyboard_default.exchange())
-    except Exception as e:
-        if message.text == get_button('2.1'):
-            if rub != 0:
-                usd = currency_calculation(rub)
-                exchange_balans(message.from_user.id,round(-usd, 2))
-                usd_with_fee = usd - usd * percent_bank
-                BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
-                BotDB.updateN(key='rub', where='id_user', meaning=message.from_user.id, num=0)
-                d = {
-                    'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_num(usd * percent_bank),
-                    'get_user':shell_num(usd_with_fee)
-                    }
-                await message.answer(get_text('rub_usd2', d), reply_markup=keyboard_default.main_page())
-                
-                await state.finish()
-                
-            else:
-                await message.answer(get_text('rub_usd3', format=False),reply_markup=keyboard_default.main_page())
-                await state.finish()
-                
-        elif message.text == get_button('2.2'):
-            await message.answer(get_text('rub_usd4', format=False), reply_markup=keyboard_default.main_page())
+            currency, rate = currency_calculation(num, f'{left}_in_{right}', currency='rate_btc')
+            exchange_balans(id_user=user.id, count_money=currency * left_sign, type_currency=f'rate_{left}')
+            exchange_balans(id_user=user.id, count_money=currency * right_sign,  type_currency=f'rate_{right}')
+        currency_with_fee = round(currency * (1 - percent_bank), signs_after_comma2)
+        BotDB.add(key=left, where='id_user', meaning=user.id, num=-num)
+        BotDB.add(key=right, where='id_user', meaning=user.id, num=currency_with_fee)
+        d = {
+            'rate_exchange': shell_num(rate),
+            'percent_bank':shell_num(percent_bank * 100),
+            'get_bank':shell_num(currency * percent_bank, q_signs_after_comma=signs_after_comma2),
+            'get_user':shell_num(currency_with_fee, q_signs_after_comma=signs_after_comma2)
+            }
+        await message.answer(get_text(f'exchange_currency2.3{left}_{right}', d), reply_markup=keyboard_default.main_page())
+        await state.finish()    
+    elif message.text == get_button('2.1'):
+        num = BotDB.get(key=left, where='id_user', meaning=user.id)
+        if num == 0:
+            await message.answer(get_text('exchange_currency2.condition2', format=False),reply_markup=keyboard_default.main_page())
             await state.finish()
-            
+            return
+        if right == 'rub' or left == 'rub':
+            currency, rate = currency_calculation(num, f'{left}_in_{right}')
+            sign = 1 if right == 'rub' else -1
+            exchange_balans(id_user=user.id, count_money=currency * sign)
         else:
-            await message.answer(get_text('rub_usd5', format=False),reply_markup=keyboard_default.exchange())
-
-
-@dp.callback_query_handler(Text(equals='ur'))
-@ban_call()
-@error_reg_call
-@last_tap_call('usd_rub')
-async def usd_rub1(call: CallbackQuery):
-    await call.answer(cache_time=1)
-    await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
-    await bot.send_message(call.from_user.id, get_text('usd_rub1', format=False),reply_markup=keyboard_default.exchange())
-    await exchange_usd_rub.Q1.set()
-    
-
-
-@dp.message_handler(state=exchange_usd_rub.Q1)
-@last_tap('-', state=True)
-async def usd_rub2(message: Message, state: FSMContext):
-    usd = BotDB.get(key='usd', where='id_user', meaning=message.from_user.id)
-    percent_bank = BotDB.vCollector(table='value_main', where='name', meaning='percent_bank')
-    try:
-        num = round(float(message.text), 2)
-        if num <= usd:
-            
-            
-            rub = currency_calculation(num, what_calculate='usd_in_rub')
-            exchange_balans(message.from_user.id,num)  # usd+
-            rub_with_fee = rub - rub * percent_bank
-            BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=round(rub_with_fee, 2))
-            BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=-num)
-            d = {
-                'percent_bank':int(percent_bank * 100),
-                'get_bank':shell_num(rub * percent_bank),
-                'get_user':shell_num(rub_with_fee)
-                }
-            await message.answer(get_text('usd_rub2', d), reply_markup=keyboard_default.main_page())
-            await state.finish()
-            
-        else:
-            await message.answer(get_text('usd_rub3', format=False),reply_markup=keyboard_default.exchange())
-    except Exception as e:
-        if message.text == get_button('2.1'):
-            if usd != 0:
+            currency, rate = currency_calculation(num, f'{left}_in_{right}', currency='rate_btc')
+            exchange_balans(id_user=user.id, count_money=currency * left_sign, type_currency=f'rate_{left}')
+            exchange_balans(id_user=user.id, count_money=currency * right_sign,  type_currency=f'rate_{right}')
+        currency_with_fee = round(currency * (1 - percent_bank), signs_after_comma2)
+        BotDB.updateN(key=left, where='id_user', meaning=user.id, num=0)
+        BotDB.add(key=right, where='id_user', meaning=user.id, num=currency_with_fee)
+        d = {
+            'rate_exchange': shell_num(rate),
+            'percent_bank':shell_num(percent_bank * 100),
+            'get_bank':shell_num(currency * percent_bank, q_signs_after_comma=signs_after_comma2),
+            'get_user':shell_num(currency_with_fee, q_signs_after_comma=signs_after_comma2)
+            }
+        await message.answer(get_text(f'exchange_currency2.3{left}_{right}', d), reply_markup=keyboard_default.main_page())
+        await state.finish()
                 
-                rub = currency_calculation(usd, what_calculate='usd_in_rub')
-                exchange_balans(message.from_user.id,usd)  # usd+
-                rub_with_fee = rub - rub * percent_bank
-                BotDB.add(key='rub', where='id_user', meaning=message.from_user.id, num=round(rub_with_fee, 2))
-                BotDB.updateN(key='usd', where='id_user', meaning=message.from_user.id, num=0)
-                d = {
-                    'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_num(rub * percent_bank),
-                    'get_user':shell_num(rub_with_fee)
-                    }
-                await message.answer(get_text('usd_rub2', d), reply_markup=keyboard_default.main_page())
-                
-                await state.finish()
-                
-            else:
-                await message.answer(get_text('usd_rub3', format=False), reply_markup=keyboard_default.main_page())
-                await state.finish()
-                
-        elif message.text == get_button('2.2'):
-            await message.answer(get_text('usd_rub4', format=False), reply_markup=keyboard_default.main_page())
-            await state.finish()
-            
-        else:
-            await message.answer(get_text('usd_rub5', format=False), reply_markup=keyboard_default.exchange())
-
-
-@dp.callback_query_handler(Text(equals='ub'))
-@ban_call()
-@error_reg_call
-@last_tap_call('usd_btc')
-async def usd_btc1(call: CallbackQuery):
-    usd = BotDB.get(key='usd', where='id_user', meaning=call.from_user.id)
-    rate_btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
-    if usd > rate_btc / 10:
-        await call.answer(cache_time=1)
-        await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
-        await bot.send_message(call.from_user.id, get_text('usd_btc1', format=False),
-                               reply_markup=keyboard_default.exchange())
-        await exchange_usd_btc.Q1.set()
+    elif message.text == get_button('2.2'):
+        await message.answer(get_text('exchange_currency2.1', format=False), reply_markup=keyboard_default.main_page())
+        await state.finish()
         
     else:
-        await bot.send_message(call.from_user.id, get_text('usd_btc2', format=False))
-
-
-@dp.message_handler(state=exchange_usd_btc.Q1)
-@last_tap('-', state=True)
-async def usd_btc2(message: Message, state: FSMContext):
-    percent_bank = BotDB.vCollector(table='value_main', where='name', meaning='percent_bank')
-    usd = BotDB.get(key='usd', where='id_user', meaning=message.from_user.id)
-    rate_btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
-    try:
-        num = round(float(message.text), 2)
-        if num > rate_btc / 10:
-            if num <= usd:
-                btc = currency_calculation(num, what_calculate='usd_in_btc', currency='rate_btc')
-                exchange_balans(message.from_user.id,num)  # usd+
-                exchange_balans(message.from_user.id,-btc ,'rate_btc')  # btc-
-                btc_with_fee = btc - btc * percent_bank
-                BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=round(btc_with_fee, 5))
-                BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=-num)
-                d = {
-                    'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_num(btc * percent_bank, "btc"),
-                    'get_user':shell_num(btc_with_fee, "btc")
-                    }
-                await message.answer(get_text('usd_btc3', d), reply_markup=keyboard_default.main_page()) 
-                await state.finish()
-                
-            else:
-                await message.answer(get_text('usd_btc4', format=False), reply_markup=keyboard_default.exchange())
-        else:
-            await message.answer(get_text('usd_btc5', format=False))
-            await message.answer(get_text('usd_btc6', format=False))
-    except Exception as e:
-        if message.text == get_button('2.1'):
-            if usd > rate_btc / 10:
-                btc = currency_calculation(usd, what_calculate='usd_in_btc', currency='rate_btc')
-                exchange_balans(message.from_user.id,usd)  # usd+
-                exchange_balans(message.from_user.id,-btc ,'rate_btc')  # btc-
-                btc_with_fee = btc - btc * percent_bank
-                BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=round(btc_with_fee, 5))
-                BotDB.updateN(key='usd', where='id_user', meaning=message.from_user.id, num=0)
-                d = {
-                    'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_num(btc * percent_bank, "btc"),
-                    'get_user':shell_num(btc_with_fee, "btc")
-                    }
-                await message.answer(get_text('usd_btc3', d), reply_markup=keyboard_default.main_page()) 
-                await state.finish()
-                
-            else:
-                await message.answer(get_text('usd_btc7', format=False))
-                await state.finish()
-                
-        elif message.text == get_button('2.2'):
-            await message.answer(get_text('usd_btc8', format=False), reply_markup=keyboard_default.main_page())
-            await state.finish()
-            
-        else:
-            await message.answer(get_text('usd_btc9', format=False), reply_markup=keyboard_default.exchange())
-
-
-@dp.callback_query_handler(Text(equals='bu'))
-@ban_call()
-@error_reg_call
-@last_tap_call('btc_usd')
-async def btc_usd1(call: CallbackQuery):
-    await call.answer(cache_time=1)
-    await bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=None)
-    await bot.send_message(call.from_user.id, get_text('btc_usd1', format=False), reply_markup=keyboard_default.exchange())
-    await exchange_btc_usd.Q1.set()
-   
-
-
-@dp.message_handler(state=exchange_btc_usd.Q1)
-@last_tap('-', state=True)
-async def btc_usd2(message: Message, state: FSMContext):
-    percent_bank = BotDB.vCollector(table='value_main', where='name', meaning='percent_bank')
-    btc = BotDB.get(key='btc', where='id_user', meaning=message.from_user.id)
-    try:
-        num = round(float(message.text), 5)
-        if num <= btc:
-            usd = currency_calculation(num, what_calculate='btc_in_usd', currency='rate_btc')
-            exchange_balans(message.from_user.id,-usd)  # usd-
-            exchange_balans(message.from_user.id,num ,'rate_btc')  # btc+
-            usd_with_fee = usd - usd * percent_bank
-            BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
-            BotDB.add(key='btc', where='id_user', meaning=message.from_user.id, num=-num)
-            d = {
-                'percent_bank':int(percent_bank * 100),
-                'get_bank':shell_num(usd * percent_bank),
-                'get_user':shell_num(usd_with_fee)
-                }
-            await message.answer(get_text('btc_usd2', d), reply_markup=keyboard_default.main_page()) 
-            await state.finish()
-            
-        else:
-            await message.answer(get_text('btc_usd3', format=False), reply_markup=keyboard_default.exchange())
-    except Exception as e:
-        if message.text == get_button('2.1'):
-            if btc > 0:
-                usd = currency_calculation(btc, what_calculate='btc_in_usd', currency='rate_btc')
-                exchange_balans(message.from_user.id,-usd)  # usd-
-                exchange_balans(message.from_user.id,btc ,'rate_btc')  # btc+
-                usd_with_fee = usd - usd * percent_bank
-                BotDB.add(key='usd', where='id_user', meaning=message.from_user.id, num=round(usd_with_fee, 2))
-                BotDB.updateN(key='btc', where='id_user', meaning=message.from_user.id, num=0)
-                d = {
-                    'percent_bank':int(percent_bank * 100),
-                    'get_bank':shell_num(usd * percent_bank),
-                    'get_user':shell_num(usd_with_fee)
-                    }
-                await message.answer(get_text('btc_usd2', d), reply_markup=keyboard_default.main_page())   
-                await state.finish()
-                
-            else:
-                await message.answer(get_text('btc_usd4', format=False),
-                                     reply_markup=keyboard_default.main_page())
-                await state.finish()
-                
-        elif message.text == get_button('2.2'):
-            await message.answer(get_text('btc_usd5', format=False), reply_markup=keyboard_default.main_page())
-            await state.finish()
-            
-        else:
-            await message.answer(get_text('btc_usd6', format=False), reply_markup=keyboard_default.exchange())
+        await message.answer(get_text('exchange_currency2.2', format=False),reply_markup=keyboard_default.exchange())
 
 ########################################
 
 @dp.message_handler(Text(equals=get_button('3')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('-')
 async def menu_stocks(message: Message):
     await message.answer(get_text('menu_stocks', format=False), reply_markup=keyboard_default.menu_stocks())
 
 ########################################
 
+@dp.message_handler(Text(equals=get_button('3.2')))
+@ban()
+@error_reg()
+@last_tap('-')
+async def my_stocks(message: Message):
+    user = User(message.from_user.id)
+    if stocks_exist(user.id):
+        d = {
+            'quantity_stocks_currently': shell_num(get_quantity_stocks_currently(user.id)),
+            'price_one_stock': shell_num(user.price_one_stock)
+            }
+        return await message.answer(get_text('my_stocks', format=True, d=d))
+    await message.answer(get_text('create_stocks', format=False), reply_markup=keyboard_inline.create_stocks())
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'create_stocks' and call.data.split(':')[0] == 'stocks')
+@ban_call()
+@error_reg_call()
+@last_tap_call('-')
+async def create_stocks1(call: CallbackQuery):
+    await bot.delete_message(chat_id=call.from_user.id, message_id=call.message.message_id)
+    await bot.send_message(call.from_user.id, get_text('create_stocks1.1', format=False), reply_markup=keyboard_default.cancel())
+    await stocks.Q1.set()
+
+@dp.message_handler(state=stocks.Q1)
+@last_tap('-', state=True)
+async def create_stocks2(message: Message, state: FSMContext):
+    if message.text == get_button('*2'):
+        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+    elif cleannum(message.text).isdigit():
+        num = int(cleannum(message.text))
+        if (BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_min') > num) | (num > BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_max')):
+            return await message.answer(get_text('create_stocks2.condition', format=False))
+
+        async with state.proxy() as data:
+                data['percent_of_income'] = num/100
+        await message.answer(get_text('create_stocks2.1', format=False))
+        await stocks.Q2.set()
+    else:
+        await message.answer(get_text('create_stocks2.3', format=False))
+    
+@dp.message_handler(state=stocks.Q2)
+@last_tap('-', state=True)
+async def create_stocks3(message: Message, state: FSMContext):
+    if message.text == get_button('*2'):
+        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+    elif cleannum(message.text).isdigit():
+        num = int(cleannum(message.text))
+        if (BotDB.vCollector(table='value_main', where='name', meaning='count_stocks_min') > num) | (num > BotDB.vCollector(table='value_main', where='name', meaning='count_stocks_max')):
+            return await message.answer(get_text('create_stocks3.condition', format=False))     
+        async with state.proxy() as data:
+                data['quantity_stocks'] = num
+        await message.answer(get_text('create_stocks3.1', format=False))
+        await stocks.Q3.set()
+    else:
+        await message.answer(get_text('create_stocks3.3', format=False))
+
+@dp.message_handler(state=stocks.Q3)
+@last_tap('-', state=True)
+async def create_stocks4(message: Message, state: FSMContext):
+    user = User(message.from_user.id)
+    if message.text == get_button('*2'):
+        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+    elif cleannum(message.text).isdigit() or isfloat(cleannum(message.text)):
+        num = round(float(cleannum(message.text)), 2)
+        if num < BotDB.vCollector(where='name', meaning=f'min_price_stocks', table='value_main'):
+            return await message.answer(get_text('create_stocks4.condition', format=False))
+        data = await state.get_data()
+        percent_of_income = data.get('percent_of_income')
+        quantity_stocks = data.get('quantity_stocks')
+        BotDB.updateN(key='count_make_stocks', where='id_user', meaning=user.id, num=quantity_stocks)
+        BotDB.updateN(key='price_one_stock', where='id_user', meaning=user.id, num=num)
+        BotDB.add_stocks(id_slot=taG(), id_stocks=user.id, percent_of_income=percent_of_income, quantity_stocks=quantity_stocks, price_one_stock=num, seller=user.id)
+        await message.answer(get_text('create_stocks4.1', format=False), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+    else:
+        await message.answer(get_text('create_stocks4.3', format=False))
+    
+# ########################################
 
 @dp.message_handler(Text(equals=get_button('3.1')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('-')
 async def stock_market(message: Message):
-    data = BotDB.get_alls('id_company, name_company, count_stocks_stay, price_one_stocks', table='stocks')
-    count_page = len([i for i in data if i[2] != 0])/BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
+    data = BotDB.get_all('quantity_stocks', table='stocks')
+    count_page = len([i for i in data if i != 0]) / BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     d = {
         'list_stocks': list_stocks(),
         'page': 1,
@@ -579,12 +467,12 @@ async def stock_market(message: Message):
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'forward' and call.data.split(':')[0] == 'stocks')
 @ban_call()
-@error_reg_call
+@error_reg_call()
 @last_tap_call('-')
 async def forward_page_stocks(call: CallbackQuery):
     page = int(call.data.split(':')[2]) + 1
-    data = BotDB.get_alls('id_company, name_company, count_stocks_stay, price_one_stocks', table='stocks')
-    count_page = len([i for i in data if i[2] != 0])/BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
+    data = BotDB.get_all('quantity_stocks', table='stocks')
+    count_page = len([i for i in data if i != 0]) / BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     if page == 1:
         keyboard = keyboard_inline.forward_page_stocks(page)
     elif page == math.ceil(count_page):
@@ -600,12 +488,12 @@ async def forward_page_stocks(call: CallbackQuery):
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'stocks')
 @ban_call()
-@error_reg_call
+@error_reg_call()
 @last_tap_call('-')
 async def back_page_stocks(call: CallbackQuery):
     page = int(call.data.split(':')[2]) - 1
-    data = BotDB.get_alls('id_company, name_company, count_stocks_stay, price_one_stocks', table='stocks')
-    count_page = len([i for i in data if i[2] != 0])/BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
+    data = BotDB.get_all('quantity_stocks', table='stocks')
+    count_page = len([i for i in data if i != 0]) / BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     if page == 1:
         keyboard = keyboard_inline.forward_page_stocks(page)
     elif page == math.ceil(count_page):
@@ -622,7 +510,7 @@ async def back_page_stocks(call: CallbackQuery):
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'buy' and call.data.split(':')[0] == 'stocks')
 @ban_call()
-@error_reg_call
+@error_reg_call()
 @last_tap_call('-')
 async def buy_stocks1(call: CallbackQuery):
     await bot.edit_message_reply_markup(chat_id=call.from_user.id,message_id=call.message.message_id)
@@ -635,21 +523,22 @@ async def buy_stocks2(message: Message, state: FSMContext):
     if message.text == get_button('*2'):
         await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
-    elif message.text.isdigit():
-        if message.from_user.id != int(message.text):
-            try:
-                price_one_stocks = BotDB.get(key='price_one_stocks', where='id_company', meaning=int(message.text), table='stocks')
-                async with state.proxy() as data:
-                    data['id_company'] = int(message.text)
-                    data['price_one_stocks'] = price_one_stocks
-                    await message.answer(get_text('buy_stocks2.1', format=False))
-                await stocks.Q5.set()
-            except:
-                await message.answer(get_text('buy_stocks2.2', format=False))
-        else:
-            await message.answer(get_text('buy_stocks2.4', format=False))
-    else:
-        await message.answer(get_text('buy_stocks2.3', format=False))
+    elif message.text:
+        try:
+            id_slot = BotDB.get(key='id_slot', where='id_slot', meaning=message.text, table='stocks')
+            seller = BotDB.get(key='seller', where='id_slot', meaning=message.text, table='stocks')
+        except:
+            return await message.answer(get_text('buy_stocks2.2', format=False))
+            
+        if seller == message.from_user.id:
+            return await message.answer(get_text('buy_stocks2.condition', format=False))
+            
+        async with state.proxy() as data:
+            data['id_slot'] = id_slot
+            data['price_one_stock'] = BotDB.get(key='price_one_stock', where='id_slot', meaning=id_slot, table='stocks')
+            data['id_stocks'] = BotDB.get(key='id_stocks', where='id_slot', meaning=id_slot, table='stocks')
+        await message.answer(get_text('buy_stocks2.1', format=False))
+        await stocks.Q5.set()
 
 @dp.message_handler(state=stocks.Q5)
 @last_tap('-', state=True)
@@ -659,129 +548,55 @@ async def buy_stocks3(message: Message, state: FSMContext):
         await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
     elif cleannum(message.text).isdigit():
-        cleannums = cleannum(message.text)
+        num = int(cleannum(message.text))
         data = await state.get_data()
-        id_company = data.get('id_company')
-        price_one_stocks = data.get('price_one_stocks')
-        if int(cleannums) * price_one_stocks < user.usd:
-            if BotDB.get(key='count_stocks_stay', where='id_company', meaning=id_company, table='stocks') - int(cleannums) >= 0:
+        id_slot: str = data.get('id_slot')
+        price_one_stock = data.get('price_one_stock')
+        id_stocks = data.get('id_stocks')
 
-                pay = round(int(cleannums) * price_one_stocks, 2)
-                BotDB.add(key='usd', where='id_user', meaning=user.id, num=-pay)
+        if num * price_one_stock > user.usd:
+            return await message.answer(get_text('buy_stocks3.condition1', format=False))
+            
+        if BotDB.get(key='quantity_stocks', where='id_slot', meaning=id_slot, table='stocks') - num < 0:
+            return await message.answer(get_text('buy_stocks3.condition2', format=False))
 
-                BotDB.add(key='count_stocks_stay', where='id_company', meaning=id_company, table='stocks', num=-int(cleannums))
+        pay = round(num * price_one_stock, 2)
+        BotDB.add(key='usd', where='id_user', meaning=user.id, num=-pay)
 
-                if True in list(map(lambda x: True if int(id_company) in x else False, parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id))):
-                    add_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_company', meaning_data=str(id_company), add_data='quantity_stocks', add=int(cleannums))
-                else:
-                    name_company = BotDB.get(key='name_company', where='id_company', meaning=id_company, table='stocks')
-                    d = [f'{id_company}', f'{name_company}', f'{cleannums}', f'{price_one_stocks}']
-                    create_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, headers=['id_company', 'name_company', 'quantity_stocks', 'price_buy'], d = d)
-                
-                update_rating_stocks(id_company)
+        BotDB.add(key='quantity_stocks', where='id_slot', meaning=id_slot, table='stocks', num=-num)
+        user2 = User(id_stocks)
 
-                await message.answer(get_text('buy_stocks3.1', format=False), reply_markup=keyboard_default.menu_stocks())
-                await state.finish()
-            else:
-                await message.answer(get_text('buy_stocks3.2', format=False))
+        id_slot_stocks_old = True in list(map(lambda x: True if id_slot in x else False, parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id)))
+
+        if id_slot_stocks_old:
+            add_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_stocks', meaning_data=str(id_stocks), add_data='quantity_stocks', add=num)
         else:
-            await message.answer(get_text('buy_stocks3.3', format=False))
+            d = [str(id_slot), str(id_stocks), str(user2.company_name), str(num), str(price_one_stock)]
+            create_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, d = d)
+        
+        update_rating_stocks(id_slot)
+
+        await message.answer(get_text('buy_stocks3.1', format=False), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+          
     else:
         await message.answer(get_text('buy_stocks3.4', format=False))
 
 ########################################
 
-@dp.message_handler(Text(equals=get_button('3.2')))
-@ban()
-@error_reg
-@last_tap('-')
-async def my_stocks(message: Message):
-    try:
-        d = {
-            'count_stocks_stay': shell_num(BotDB.get(key='count_stocks_stay', where='id_company', meaning=message.from_user.id, table='stocks')),
-            'price_one_stocks': shell_num(BotDB.get(key='price_one_stocks', where='id_company', meaning=message.from_user.id, table='stocks'))
-            }
-        await message.answer(get_text('my_stocks', format=True, d=d))
-    except:
-        await message.answer(get_text('create_first_stocks', format=False), reply_markup=keyboard_inline.create_first_stocks())
-
-@dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'create_first_stocks' and call.data.split(':')[0] == 'stocks')
-@ban_call()
-@error_reg_call
-@last_tap_call('-')
-async def create_first_stocks1(call: CallbackQuery):
-    await bot.delete_message(chat_id=call.from_user.id, message_id=call.message.message_id)
-    await bot.send_message(call.from_user.id, get_text('create_first_stocks1.1', format=False), reply_markup=keyboard_default.cancel())
-    await stocks.Q1.set()
-
-@dp.message_handler(state=stocks.Q1)
-@last_tap('-', state=True)
-async def create_first_stocks2(message: Message, state: FSMContext):
-    if message.text == get_button('*2'):
-        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
-        await state.finish()
-    elif message.text.isdigit():
-        if int(message.text) <= BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_max') and int(message.text) >= BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_min'):
-            async with state.proxy() as data:
-                data['piece_of_income'] = int(message.text)/100
-            await message.answer(get_text('create_first_stocks2.1', format=False))
-            await stocks.Q2.set()
-        else:
-            await message.answer(get_text('create_first_stocks2.2', format=False))
-    else:
-        await message.answer(get_text('create_first_stocks2.3', format=False))
-    
-@dp.message_handler(state=stocks.Q2)
-@last_tap('-', state=True)
-async def create_first_stocks3(message: Message, state: FSMContext):
-    if message.text == get_button('*2'):
-        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
-        await state.finish()
-    elif message.text.isdigit():
-        if int(message.text) <= BotDB.vCollector(table='value_main', where='name', meaning='count_stocks_max') and int(message.text) >= BotDB.vCollector(table='value_main', where='name', meaning='count_stocks_min'):
-            async with state.proxy() as data:
-                data['count_stocks'] = int(message.text)
-            await message.answer(get_text('create_first_stocks3.1', format=False))
-            await stocks.Q3.set()
-        else:
-            await message.answer(get_text('create_first_stocks3.2', format=False))
-    else:
-        await message.answer(get_text('create_first_stocks3.3', format=False))
-
-@dp.message_handler(state=stocks.Q3)
-@last_tap('-', state=True)
-async def create_first_stocks4(message: Message, state: FSMContext):
-    user = User(message.from_user.id)
-    if message.text == get_button('*2'):
-        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
-        await state.finish()
-    elif message.text.isdigit() or isfloat(message.text):
-        if round(float(message.text),2) > BotDB.vCollector(where='name', meaning=f'min_price_stocks', table='value_main'):
-            data = await state.get_data()
-            piece_of_income = data.get('piece_of_income')
-            count_stocks = data.get('count_stocks')
-            name_company = BotDB.get(key=f'name_company', where='id_company', meaning=user.id, table=user.type_of_activity)
-            BotDB.add_stocks(id_company=user.id, name_company=name_company, piece_of_income=piece_of_income, count_stocks=count_stocks, count_stocks_stay=count_stocks, price_one_stocks=round(float(message.text), 2) if isfloat(message.text) else int(message.text), seller=user.id)
-            await message.answer(get_text('create_first_stocks4.1', format=False), reply_markup=keyboard_default.menu_stocks())
-            await state.finish()
-        else:
-            await message.answer(get_text('create_first_stocks4.2', format=False))
-    else:
-        await message.answer(get_text('create_first_stocks4.3', format=False))
-
-########################################
-
 @dp.message_handler(Text(equals=get_button('3.3')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('-')
 async def menu_briefcase(message: Message):
-    d = {'stocks': get_your_stocks(message.from_user.id)}
-    await message.answer(get_text('menu_briefcase', format=True, d=d), reply_markup=keyboard_inline.menu_briefcase())
+    if i_have_stocks(message.from_user.id):
+        d = {'stocks': get_your_stocks(message.from_user.id)}
+        return await message.answer(get_text('menu_briefcase', format=True, d=d), reply_markup=keyboard_inline.menu_briefcase())
+    await message.answer(get_text('menu_briefcase_empty', format=False))
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'sell_stocks' and call.data.split(':')[0] == 'briefcase')
 @ban_call()
-@error_reg_call
+@error_reg_call()
 @last_tap_call('-')
 async def briefcase_sell_stocks1(call: CallbackQuery):
     await bot.edit_message_reply_markup(chat_id=call.from_user.id,message_id=call.message.message_id)
@@ -794,54 +609,74 @@ async def briefcase_sell_stocks2(message: Message, state: FSMContext):
     if message.text == get_button('*2'):
         await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
-    elif message.text.isdigit():
-        if message.from_user.id != int(message.text):
-            try:
-                # name = BotDB.get(key='name_company', where='id_company', meaning=int(message.text), table='stocks')
-                async with state.proxy() as data:
-                    data['id_company'] = int(message.text)
-                    await message.answer(get_text('briefcase_sell_stocks2.1', format=False))
-                await stocks.Q7.set()
-            except: 
-                await message.answer(get_text('briefcase_sell_stocks2.5', format=False))
-        else:
-            await message.answer(get_text('briefcase_sell_stocks2.4', format=False))
-    else:
-        await message.answer(get_text('briefcase_sell_stocks2.3', format=False))
+    elif message.text:
+        try:
+            id_slot = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=message.from_user.id, meaning_data=message.text, where_data='id_slot', get_data='id_slot')
+            id_stocks = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=message.from_user.id, meaning_data=message.text, get_data='id_stocks', where_data='id_slot')
+        except: 
+            return await message.answer(get_text('briefcase_sell_stocks2.5', format=False))
+            
+        async with state.proxy() as data:
+            data['id_slot'] = id_slot
+            data['id_stocks'] = id_stocks
+        await message.answer(get_text('briefcase_sell_stocks2.1', format=False))
+        await stocks.Q7.set()
 
 @dp.message_handler(state=stocks.Q7)
 @last_tap('-', state=True)
 async def briefcase_sell_stocks3(message: Message, state: FSMContext):
+    if message.text == get_button('*2'):
+        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+    elif cleannum(message.text).isdigit() or isfloat(cleannum(message.text)):
+        num = round(float(cleannum(message.text)), 2)
+        if num == 0:
+            return await message.answer(get_text('briefcase_sell_stocks3.condition1', format=False))
+        if num < 0:
+            return await message.answer(get_text('briefcase_sell_stocks3.condition2', format=False))
+            
+        async with state.proxy() as data:
+            data['price_one_stock'] = num
+        await message.answer(get_text('briefcase_sell_stocks3.1', format=False))
+        await stocks.Q8.set()
+    else:
+        await message.answer(get_text('briefcase_sell_stocks3.4', format=False))
+
+@dp.message_handler(state=stocks.Q8)
+@last_tap('-', state=True)
+async def briefcase_sell_stocks4(message: Message, state: FSMContext):
     user = User(message.from_user.id)
     if message.text == get_button('*2'):
         await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
     elif cleannum(message.text).isdigit():
-        cleannums = cleannum(message.text)
+        num = int(cleannum(message.text))
         data = await state.get_data()
-        id_company = data.get('id_company')
-        price_one_stocks = BotDB.get(key='price_one_stocks', where='id_company', meaning=id_company, table='stocks')
-        count_stocks_my = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_company', meaning_data=str(id_company), get_data='quantity_stocks')
-        count_stocks_company = BotDB.get(key='count_stocks', where='id_company', meaning=id_company, table='stocks')
-        if int(count_stocks_my) - int(cleannums) >= 0:
-            delete_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, unique_value_data=str(id_company)) if int(count_stocks_my) - int(cleannums) == 0 else add_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_company', meaning_data=str(id_company), add_data='quantity_stocks', add=-int(cleannums))
-            piece_of_income = BotDB.get(key='piece_of_income', where='id_company', meaning=id_company, table='stocks')
-            price_one_stocks = BotDB.get(key='price_one_stocks', where='id_company', meaning=id_company, table='stocks')      
-            name_company = BotDB.get(key=f'name_company', where='id_company', meaning=message.from_user.id, table=user.type_of_activity)
-            BotDB.add_stocks(id_company=user.id, name_company=name_company, piece_of_income=piece_of_income, count_stocks=count_stocks_company, count_stocks_stay=int(cleannums), price_one_stocks=price_one_stocks, seller=int(id_company))
-            await message.answer(get_text('briefcase_sell_stocks3.1', format=False), reply_markup=keyboard_default.menu_stocks())
-            await state.finish()
+        id_slot = data.get('id_slot')
+        id_stocks = data.get('id_stocks')
+        price_one_stock = data.get('price_one_stock')
+        quantity_stocks = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_slot', meaning_data=id_slot, get_data='quantity_stocks')
+        
+        if int(quantity_stocks) - num < 0:
+            return await message.answer(get_text('briefcase_sell_stocks4.condition1', format=False))
+        if int(quantity_stocks) - num == 0:
+            delete_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, unique_value_data=id_slot)
         else:
-            await message.answer(get_text('briefcase_sell_stocks3.3', format=False))
+            add_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_slot', meaning_data=id_slot, add_data='quantity_stocks', add=-num)
+    
+        percent_of_income = BotDB.get(key='percent_of_income', where='id_stocks', meaning=id_stocks, table='stocks')     
+        BotDB.add_stocks(id_slot=taG(), id_stocks=id_stocks, percent_of_income=percent_of_income, quantity_stocks=num, price_one_stock=price_one_stock, seller=user.id)
+        await message.answer(get_text('briefcase_sell_stocks4.1', format=False), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
     else:
-        await message.answer(get_text('briefcase_sell_stocks3.4', format=False))
+        await message.answer(get_text('briefcase_sell_stocks4.4', format=False))
 
 
 ########################################
 
 @dp.message_handler(Text(equals=get_button('5')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('trends')
 async def trends_menu(message: Message):
     await message.answer(get_text('trends_menu', format=False), reply_markup=keyboard_inline.trends_menu_())
@@ -852,33 +687,29 @@ async def trends_menu(message: Message):
 async def voting_menu(call: CallbackQuery):
     await bot.edit_message_text(get_text('voting_menu', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.all_voting_company(call.from_user.id))
 
+# ###############################################
+
 @dp.message_handler(Text(equals=get_button('6')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('referal')
 async def referal_invite(message: Message):
     oneseven = BotDB.vCollector(table='value_main', where='name', meaning='oneseven')
     award_referrer = BotDB.vCollector(table='value_main', where='name', meaning='award_referrer')  # награда того кто пригласил(реферрер)
     award_referral = BotDB.vCollector(table='value_main', where='name', meaning='award_referral')  # награда реферала перешедшего по ссылке
     d = {
-            'oneseven':oneseven,
-            'award_referrer':shell_num(award_referrer),
-            'award_referral':shell_num(award_referral),
-            'referrer_linc':referrer_linc(message.from_user.id),
-            'get_user_referals':BotDB.get_user_referals(message.from_user.id)[1]
+        'oneseven': oneseven,
+        'award_referrer': shell_num(award_referrer),
+        'award_referral': shell_num(award_referral),
+        'referrer_linc': referrer_linc(message.from_user.id),
+        'get_user_referals': BotDB.get_user_referals(message.from_user.id)[1]
         }
-    await message.answer(get_text('referal_invite1', d))
-
-# @dp.message_handler(Text(equals='rrr'))
-# @ban()
-# @error_reg
-# @last_tap('-')
-# async def tetst(message: Message):
-#     await message.answer(message.content_type)  
+    await message.answer(get_text('referal_invite1', format=True, d=d))
+ 
 
 @dp.message_handler(Text(equals=get_button('7')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('bonus')
 async def bonus(message: Message):
     await message.answer(get_text('bonus1', format=False))  
@@ -922,16 +753,16 @@ def company_keyboard(id_user):
 
 @dp.message_handler(Text(equals=get_button('8')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('company')
 async def company(message: Message):
     keyboard, text = company_keyboard(message.from_user.id)
-    await message.answer(get_text('company', format=True, d={'text': text}),reply_markup=keyboard)
+    await message.answer(get_text('company', format=True, d={'text': text}), reply_markup=keyboard)
     await company_dev_software.Q1.set() 
 
 @dp.message_handler(Text(equals=get_button('9')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('forbs')
 async def forbs(message: Message):
     await message.answer(get_text('forbs', format=False), reply_markup=keyboard_default.forbs())
@@ -939,7 +770,7 @@ async def forbs(message: Message):
 
 @dp.message_handler(Text(equals=get_button('10')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('setting')
 async def setting(message: Message):
     await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting())
@@ -948,7 +779,7 @@ async def setting(message: Message):
 
 @dp.message_handler(Text(equals=get_button('10.2')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('change_nickname')
 async def change_nickname(message: Message):
     amount_of_changes = BotDB.get(key='amount_of_changes_nickname', where='id_user', meaning=message.from_user.id)
@@ -994,7 +825,7 @@ async def change_nickname3(message: Message, state: FSMContext):
         # запись nickname(псевдонима)
         await message.answer(get_text('change_nickname3.1', format=False), reply_markup=keyboard_default.user_setting())
         BotDB.add(key='amount_of_changes_nickname', where='id_user', meaning=message.from_user.id, num=-1)
-        BotDB.updateT(key='nickname', where='id_user', meaning=message.from_user.id, text=message.text)
+        BotDB.updateT(key='nickname', where='id_user', meaning=message.from_user.id, text=answer)
         await state.finish()
     else:
         await message.answer(get_text('change_nickname3.2', format=False))
@@ -1003,7 +834,7 @@ async def change_nickname3(message: Message, state: FSMContext):
 
 @dp.message_handler(Text(equals=get_button('10.3')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('contact_support')
 async def contact_support(message: Message):
     await message.answer(get_text('contact_support', format=False), reply_markup=keyboard_default.cancel())
@@ -1012,7 +843,7 @@ async def contact_support(message: Message):
 @dp.message_handler(state=Contact_Support.Q1)
 @last_tap('-', state=True)
 async def contact_support1(message: Message, state: FSMContext):
-    id_user = message.from_user.id
+    user = User(message.from_user.id)
     if message.text == get_button('*2'):
         await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting())
         await state.finish()
@@ -1020,27 +851,30 @@ async def contact_support1(message: Message, state: FSMContext):
         teg = taG()
         date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
         d={
-            'user': f'<a href="tg://user?id={id_user}">{BotDB.get(key="nickname", where="id_user", meaning=id_user)}</a>',
+            'user': message.from_user.get_mention(name=user.nickname),
             'date': date,
             'text': message.text,
             'tag': teg
         }
-        BotDB.add_support_message(tag=teg, id_user=id_user, info_message=get_text('message_in_chat_support', format=True, d=d), message=message.text)
+        BotDB.add_support_message(tag=teg, id_user=user.id, info_message=get_text('message_in_chat_support', format=True, d=d), message=message.text)
         await bot.send_message(BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support'), get_text('message_in_chat_support', format=True, d=d), reply_markup=keyboard_inline.i_am_take(teg))
         
         await message.answer(get_text('contact_support1.2', format=False), reply_markup=keyboard_default.user_setting())
         await state.finish()
 
-@dp.callback_query_handler(Text(contains='i_am_take'))
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'i_am_take')
 @last_tap_call('-')
 async def answer_button(call: CallbackQuery):
     id_user = call.from_user.id
     teg = call.data.split(':')[1]
-    await bot.delete_message(message_id=call.message.message_id, chat_id=BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support'))
-    await bot.send_message(id_user, BotDB.get(key='info_message', where='tag', meaning=teg, table='message_in_support'), reply_markup=keyboard_inline.give_an_answer(teg))
+    id_chat_support = BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support')
+    info_message = BotDB.get(key='info_message', where='tag', meaning=teg, table='message_in_support')
+    
+    await bot.delete_message(message_id=call.message.message_id, chat_id=id_chat_support)
+    await bot.send_message(id_user, info_message, reply_markup=keyboard_inline.give_an_answer(teg))
 
 
-@dp.callback_query_handler(Text(contains='give_an_answer'))
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'give_an_answer')
 @last_tap_call('-', state=True)
 async def answer_button(call: CallbackQuery, state: FSMContext):
     id_user = call.from_user.id
@@ -1055,47 +889,50 @@ async def answer_button(call: CallbackQuery, state: FSMContext):
 @dp.message_handler(state=Contact_Support.Q2)
 @last_tap('-', state=True)
 async def answer_button1(message: Message, state: FSMContext):
-    id_user = message.from_user.id
+    user = User(message.from_user.id)
     data = await state.get_data()
     teg = data.get('tag')
+    id_chat_support = BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support')
     if message.text == get_button('*3'):
         # возвращаем удоленное сообщение рание в чат теч. поддержки
-        await bot.send_message(BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support'), BotDB.get(key='info_message', where='tag', meaning=teg, table='message_in_support'), reply_markup=keyboard_inline.i_am_take(teg))
+        info_message = BotDB.get(key='info_message', where='tag', meaning=teg, table='message_in_support')
+        await bot.send_message(id_chat_support, info_message, reply_markup=keyboard_inline.i_am_take(teg))
         # отправляем сообщение ответчику
         await message.answer(get_text('answer_button1.1',format=False), reply_markup=keyboard_default.main_page())
         await state.finish()
     else:
-        text = BotDB.get(key='message', where='tag', meaning=teg, table='message_in_support')
+        user_message = BotDB.get(key='message', where='tag', meaning=teg, table='message_in_support')
         d = {
-            'text':text,
-            'answer':message.text
+            'user_text': user_message,
+            'admin_answer': message.text
         }
         # отправляем ответ юзеру
-        await bot.send_message(BotDB.get(key='id_user', where='tag', meaning=teg, table='message_in_support'), get_text('answer_button1.2',format=True, d=d))
-        # отправляем ответчику сообщение о том что его ответ доставлен юзеру
-        await message.answer(get_text('answer_button1.3',format=False), reply_markup=keyboard_default.main_page())
+        _ = BotDB.get(key='id_user', where='tag', meaning=teg, table='message_in_support') # id юзера, который обратился в тех поддержку
+        await bot.send_message(_, get_text('answer_button1.2', format=True, d=d))
+        # отправляем админу сообщение о том, что его ответ доставлен юзеру
+        await message.answer(get_text('answer_button1.3', format=False), reply_markup=keyboard_default.main_page())
         date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
         d = {
             'message': BotDB.get(key='info_message', where='tag', meaning=teg, table='message_in_support'),
-            'respondent': f'<a href="tg://user?id={id_user}">{message.from_user.full_name}</a>',
+            'respondent': message.from_user.get_mention(),
             'answer': message.text,
             'date': date
-        }
-        # отправляем в чат тех. поддержки всю информацию о вопросе и ответе, юзере и ответчике
-        await bot.send_message(BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support'), get_text('answer_button1.4',format=True, d=d))
+            }
+        # отправляем в чат тех. поддержки всю информацию о вопросе и ответе, юзере и админе
+        await bot.send_message(id_chat_support, get_text('answer_button1.4',format=True, d=d))
         await state.finish()
 
 # ######
 
 @dp.message_handler(Text(equals=get_button('*1')))
 @ban()
-@error_reg
+@error_reg()
 @last_tap('back')
 async def back(message: Message):
-    await message.answer(get_text('back', format=False),reply_markup=keyboard_default.main_page())
+    await message.answer(get_text('back', format=False), reply_markup=keyboard_default.main_page())
 
 @dp.message_handler(content_types=['photo'], state='*')
-async def ph(message: Message):
+async def get_PHOTO_id(message: Message):
     await message.answer(message.photo[-1].file_id)
 
 # @dp.message_handler(Text('poll'))
@@ -1105,6 +942,11 @@ async def ph(message: Message):
 # @dp.poll_answer_handler()
 # async def anytext(poll_answer: types.PollAnswer):
 #     pprint((poll_answer.poll_id))
+
+# @dp.message_handler(content_types=)
+# async def tetst(message: Message):
+#     await bot.send_message(message)
+#     text = get_text('test', format=False)
 
 
 

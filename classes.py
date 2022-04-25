@@ -1,4 +1,4 @@
-from db import BotDB
+from dispatcher import BotDB
 from all_function import parse_2dot_data, get_2dot_data
 
 
@@ -6,7 +6,8 @@ from all_function import parse_2dot_data, get_2dot_data
 class User:
 
     def __init__(self, id_user):
-        self.BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
+        # self.BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
+        self.BotDB = BotDB
         
         self.id: int = id_user
         self.username: str = self.BotDB.get(key='username', where='id_user', meaning=self.id)
@@ -54,15 +55,23 @@ class User:
 
     @property
     def rub(self):
-        return self.BotDB.get(key='rub', where='id_user', meaning=self.id)
+        return round(self.BotDB.get(key='rub', where='id_user', meaning=self.id), 2)
     
     @property
     def usd(self):
-        return self.BotDB.get(key='usd', where='id_user', meaning=self.id)
+        return round(self.BotDB.get(key='usd', where='id_user', meaning=self.id), 2)
     
     @property
     def btc(self):
-        return self.BotDB.get(key='btc', where='id_user', meaning=self.id)
+        return round(self.BotDB.get(key='btc', where='id_user', meaning=self.id), 5)
+    
+    @property
+    def count_mak_stocks(self):
+        return self.BotDB.get(key='count_mak_stocks', where='id_user', meaning=self.id)
+    
+    @property
+    def price_one_stock(self):
+        return round(self.BotDB.get(key='price_one_stock', where='id_user', meaning=self.id), 2)
 
     @property
     def company_name(self):
@@ -133,7 +142,7 @@ class DevSoftware:
         places = 0
         while y:
             p = parse_2dot_data(key=f'quantity_office_{i}', where='id_company', meaning=self.user.id, table='dev_software')
-            places += (p[1][1] + p[1][2]) * BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it')
+            places += (p[1][1] + p[1][2]) * self.user.BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it')
             try:
                 i+=1
                 self.user.BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it')

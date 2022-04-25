@@ -1,5 +1,4 @@
-import abc
-from ast import Return
+
 from audioop import add
 from base64 import decode
 from copy import copy
@@ -15,9 +14,11 @@ import random
 import re
 import emoji
 import datetime
-from all_function import count_percent_device, create_mat_percents, infinity_income_app, one_pay_app, shell_num
-# from classes import *
+from all_function import count_percent_device, create_mat_percents, exchange_balans, infinity_income_app, isfloat, one_pay_app, shell_num, taG, update_carrency_influence
 import numpy as np
+from dispatcher import BotDB
+
+from classes import User
 
 id_user = 474701274
 
@@ -28,6 +29,18 @@ def ttime(func):
         print(time.time() - t1)
     return wrapper
 
+
+def big_num(num):
+    
+
+
+
+
+# print(BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_min') <= 91 <= BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_max'))
+# w, s = [1,2]
+# print(s, s)
+# print(update_carrency_influence())
+# print(update_carrency_influence())
 
 # i = DevSoftware(id_user)
 # device_k = create_mat_percents(id_user)
@@ -438,8 +451,8 @@ def ttime(func):
 #         if i[where_data] == int(meaning_data):
 #             return i[get_index]
 
-# count_stocks = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=474701274, where_data=0, meaning_data=str(474701272), get_index=2)
-# print(count_stocks)
+# quantity_stocks = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=474701274, where_data=0, meaning_data=str(474701272), get_index=2)
+# print(quantity_stocks)
 # print(list(map(lambda x: True if 1458391985 in x else False, parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=474701274))))
 # date_reg = BotDB.get(key='date_reg', where='id_user', meaning=474701274)
 # date_string = date_reg.split(' ')[1]
