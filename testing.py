@@ -2,11 +2,12 @@
 from audioop import add
 from base64 import decode
 from copy import copy
+from ctypes import Union
 from curses.ascii import isascii, isdigit
 from pprint import pp, pprint
 from pydoc import text
 import string
-from typing import List
+from typing import List, Union
 from unicodedata import decimal
 import time
 import math
@@ -14,13 +15,17 @@ import random
 import re
 import emoji
 import datetime
-from all_function import count_percent_device, create_mat_percents, exchange_balans, infinity_income_app, isfloat, one_pay_app, shell_num, taG, update_carrency_influence
+from all_function import count_percent_device, create_mat_percents, exchange_balans, get_2dot_data, infinity_income_app, isfloat, one_pay_app, rent_office, shell_num, taG, update_carrency_influence
 import numpy as np
 from dispatcher import BotDB
-
-from classes import User
+from collections import deque
+from classes import DevSoftware, User, Weight
 
 id_user = 474701274
+
+s = deque([])
+s.append('5')
+
 
 def ttime(func):
     def wrapper():
@@ -29,13 +34,15 @@ def ttime(func):
         print(time.time() - t1)
     return wrapper
 
+# user = DevSoftware(id_user)
+# print(user.get_quantity_device('2', 1))
 
-def big_num(num):
-    
-
-
-
-
+s='''
+Hello, how are you?
+I'm fine thank you
+'''
+# weight = Weight(id_user)
+# weight.add_weight('size_office_1', wRatio=10, wPlus=0)]\
 # print(BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_min') <= 91 <= BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_max'))
 # w, s = [1,2]
 # print(s, s)

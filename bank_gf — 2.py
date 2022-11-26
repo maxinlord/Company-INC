@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import pandas as pd
-import matplotlib.patches as patches
 from db import BotDB
 from pprint import pprint
 

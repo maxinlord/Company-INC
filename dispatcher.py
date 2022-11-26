@@ -4,7 +4,7 @@ import config
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from db import BotDB
 
-BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
+BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

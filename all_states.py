@@ -44,6 +44,10 @@ class Ban_User(StatesGroup):
     Q1 = State()
     Q2 = State()
 
+class Tech_Break(StatesGroup):
+    Q1 = State()
+    Q2 = State()
+
 class Contact_Support(StatesGroup):
     Q1 = State()
     Q2 = State()

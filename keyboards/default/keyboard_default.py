@@ -2,7 +2,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from all_function import get_button
 from db import BotDB
 
-BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
+BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+
 
 
 def main_page():
@@ -172,17 +173,17 @@ def cds_upgrade():
     )
     return cds_upgrade
 
-def user_setting():
+def user_setting(quantity_changes_name, number_of_requests):
     user_setting = ReplyKeyboardMarkup(
         keyboard=[
             [
                 KeyboardButton(text=get_button('10.1'))
             ],
             [
-                KeyboardButton(text=get_button('10.2'))
+                KeyboardButton(text=get_button('10.2', d={'qcn':quantity_changes_name}, format=True))
             ],
             [
-                KeyboardButton(text=get_button('10.3'))
+                KeyboardButton(text=get_button('10.3', d={'nofr':number_of_requests}, format=True))
             ],
             [
                 KeyboardButton(text=get_button('*1'))

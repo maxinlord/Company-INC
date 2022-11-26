@@ -1,26 +1,23 @@
-from locale import currency
-from pprint import pprint
-from re import M
+import math
 import time
-from unittest.mock import call
-from aiogram.types import ReplyKeyboardRemove
-from aiogram.dispatcher.filters import Command, Text
-from aiogram.types import Message, Update, PollAnswer
+from pprint import pprint
+
+from aiogram import Bot
 from aiogram.dispatcher import FSMContext
-from aiohttp import ContentTypeError
-from classes import DevSoftware, User
-from dispatcher import dp, bot, BotDB
-from keyboards.default import keyboard_default
-from keyboards.inline import keyboard_inline
-from aiogram.types import CallbackQuery
+from aiogram.dispatcher.filters import Command, Text
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+
 from all_function import *
 from all_states import *
-import math
-
+from classes import DevSoftware, User, Weight
+from dispatcher import BotDB, bot, dp
+from keyboards.default import keyboard_default
+from keyboards.inline import keyboard_inline
 
 # #########################################
 
 @dp.message_handler(Command("start"), state='*')
+@tech_break(state=True)
 @ban(state=True)
 @last_tap(button='start', state=True)
 async def start_menu(message: Message, state: FSMContext):
@@ -147,6 +144,7 @@ async def q4(message: Message, state: FSMContext):
 
 
 @dp.message_handler(Command("manual"))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('manual')
@@ -155,6 +153,7 @@ async def game_manual(message: Message):
 
 
 @dp.message_handler(Command("reg"))
+@tech_break()
 @ban()
 @last_tap('reg')
 async def error_regg(message: Message):
@@ -182,6 +181,7 @@ async def error_regg(message: Message):
 
 
 @dp.message_handler(Command('items'))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('items')
@@ -190,21 +190,26 @@ async def items_menu(message: Message):
 
 
 @dp.message_handler(Text(equals=get_button('1')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('account')
 async def account_user(message: Message):
     user = User(message.from_user.id)
-    pic = get_photo('account')
-    rub = user.rub
-    usd = user.usd
-    btc = user.btc
-    text = get_text('account_user1', {'rub':shell_num(rub), 'usd':shell_num(usd), 'btc':shell_num(btc, q_signs_after_comma=5)})
-    await message.answer_photo(pic, text)
+    # pic = get_photo('account')
+    d = {
+        'nickname': user.nickname,
+        'name_company': user.company_name,
+        'rub':shell_num(user.rub),
+        'usd':shell_num(user.usd),
+        'btc':shell_num(user.btc, q_signs_after_comma=5)
+    }
+    await message.answer(get_text('account_user1', d=d))
 
 
 
 @dp.message_handler(Text(equals=get_button('2')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('bank')
@@ -235,6 +240,7 @@ async def bank(message: Message):
 
 
 @dp.callback_query_handler(Text(equals='update'), state='*')
+@tech_break_call()
 @ban_call()
 @error_reg_call()
 @last_tap_call('update')
@@ -269,6 +275,7 @@ async def bank2(call: CallbackQuery):
 
 
 @dp.callback_query_handler(Text(equals=['rub_usd', 'usd_rub', 'usd_btc', 'btc_usd']))
+@tech_break(state=True)
 @ban_call(state=True)
 @error_reg_call(state=True)
 @last_tap_call('-', state=True)
@@ -290,7 +297,7 @@ async def exchange_currency2(message: Message, state: FSMContext):
     signs_after_comma1 = 5 if left == 'btc' else 2
     signs_after_comma2 = 5 if right == 'btc' else 2
     left_sign, right_sign = [1, -1]
-    percent_bank = BotDB.vCollector(table='value_main', where='name', meaning='percent_bank')
+    percent_bank = BotDB.vCollector(table='value_main', where='name', meaning='percent_bank', wNum=user.weight.get_weight('percent_bank'), perc=True)
     if cleannum(message.text).isdigit() or isfloat(cleannum(message.text)):
         num = round(float(cleannum(message.text)), signs_after_comma1)
         if num < 0:
@@ -360,6 +367,7 @@ async def exchange_currency2(message: Message, state: FSMContext):
 ########################################
 
 @dp.message_handler(Text(equals=get_button('3')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('-')
@@ -369,6 +377,7 @@ async def menu_stocks(message: Message):
 ########################################
 
 @dp.message_handler(Text(equals=get_button('3.2')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('-')
@@ -376,13 +385,16 @@ async def my_stocks(message: Message):
     user = User(message.from_user.id)
     if stocks_exist(user.id):
         d = {
-            'quantity_stocks_currently': shell_num(get_quantity_stocks_currently(user.id)),
-            'price_one_stock': shell_num(user.price_one_stock)
+            'total_stocks': shell_num(all:= get_total_quantity_stocks(user.id)),
+            'quantity_stocks_currently': shell_num(curr:= get_quantity_stocks_currently(user.id)),
+            'price_one_stock': shell_num(get_price_one_stock(user.id)),
+            'bought_stocks': shell_num(all - curr)
             }
         return await message.answer(get_text('my_stocks', format=True, d=d))
     await message.answer(get_text('create_stocks', format=False), reply_markup=keyboard_inline.create_stocks())
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'create_stocks' and call.data.split(':')[0] == 'stocks')
+@tech_break_call()
 @ban_call()
 @error_reg_call()
 @last_tap_call('-')
@@ -440,9 +452,8 @@ async def create_stocks4(message: Message, state: FSMContext):
         data = await state.get_data()
         percent_of_income = data.get('percent_of_income')
         quantity_stocks = data.get('quantity_stocks')
-        BotDB.updateN(key='count_make_stocks', where='id_user', meaning=user.id, num=quantity_stocks)
-        BotDB.updateN(key='price_one_stock', where='id_user', meaning=user.id, num=num)
-        BotDB.add_stocks(id_slot=taG(), id_stocks=user.id, percent_of_income=percent_of_income, quantity_stocks=quantity_stocks, price_one_stock=num, seller=user.id)
+        percent_for_one_stock = round(float(percent_of_income) / float(quantity_stocks), 11)
+        BotDB.add_stocks(id_slot=taG(), id_stocks=user.id, percent_of_income=percent_for_one_stock, quantity_stocks=quantity_stocks, price_one_stock=num, seller=user.id)
         await message.answer(get_text('create_stocks4.1', format=False), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
     else:
@@ -451,11 +462,14 @@ async def create_stocks4(message: Message, state: FSMContext):
 # ########################################
 
 @dp.message_handler(Text(equals=get_button('3.1')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('-')
 async def stock_market(message: Message):
     data = BotDB.get_all('quantity_stocks', table='stocks')
+    if data == []:
+        return await message.answer(get_text('do_not_exist_offers'))
     count_page = len([i for i in data if i != 0]) / BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     d = {
         'list_stocks': list_stocks(),
@@ -463,9 +477,10 @@ async def stock_market(message: Message):
         'count_page': math.ceil(count_page)
         }
     keyboard = keyboard_inline.buy_stocks() if math.ceil(count_page) == 1 else keyboard_inline.forward_page_stocks(1)
-    await message.answer(get_text('stock_market', format=True, d=d), reply_markup=keyboard)
+    await message.answer(get_text('stock_market', format=True, d=d), reply_markup=keyboard, disable_web_page_preview=True)
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'forward' and call.data.split(':')[0] == 'stocks')
+@tech_break_call()
 @ban_call()
 @error_reg_call()
 @last_tap_call('-')
@@ -487,6 +502,7 @@ async def forward_page_stocks(call: CallbackQuery):
     await bot.edit_message_text(text=get_text('stock_market', format=True, d=d), chat_id=call.from_user.id,message_id=call.message.message_id, reply_markup=keyboard)
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'stocks')
+@tech_break_call()
 @ban_call()
 @error_reg_call()
 @last_tap_call('-')
@@ -509,6 +525,7 @@ async def back_page_stocks(call: CallbackQuery):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'buy' and call.data.split(':')[0] == 'stocks')
+@tech_break_call()
 @ban_call()
 @error_reg_call()
 @last_tap_call('-')
@@ -585,21 +602,23 @@ async def buy_stocks3(message: Message, state: FSMContext):
 ########################################
 
 @dp.message_handler(Text(equals=get_button('3.3')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('-')
 async def menu_briefcase(message: Message):
-    if i_have_stocks(message.from_user.id):
+    if i_have_stocks(message.from_user.id): 
         d = {'stocks': get_your_stocks(message.from_user.id)}
         return await message.answer(get_text('menu_briefcase', format=True, d=d), reply_markup=keyboard_inline.menu_briefcase())
     await message.answer(get_text('menu_briefcase_empty', format=False))
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'sell_stocks' and call.data.split(':')[0] == 'briefcase')
+@tech_break_call()
 @ban_call()
 @error_reg_call()
 @last_tap_call('-')
 async def briefcase_sell_stocks1(call: CallbackQuery):
-    await bot.edit_message_reply_markup(chat_id=call.from_user.id,message_id=call.message.message_id)
+    await bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id)
     await bot.send_message(call.from_user.id, get_text('briefcase_sell_stocks1.1', format=False), reply_markup=keyboard_default.cancel())
     await stocks.Q6.set()
 
@@ -675,6 +694,7 @@ async def briefcase_sell_stocks4(message: Message, state: FSMContext):
 ########################################
 
 @dp.message_handler(Text(equals=get_button('5')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('trends')
@@ -690,29 +710,44 @@ async def voting_menu(call: CallbackQuery):
 # ###############################################
 
 @dp.message_handler(Text(equals=get_button('6')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('referal')
 async def referal_invite(message: Message):
-    oneseven = BotDB.vCollector(table='value_main', where='name', meaning='oneseven')
-    award_referrer = BotDB.vCollector(table='value_main', where='name', meaning='award_referrer')  # награда того кто пригласил(реферрер)
-    award_referral = BotDB.vCollector(table='value_main', where='name', meaning='award_referral')  # награда реферала перешедшего по ссылке
+    user = User(message.from_user.id)
+    oneseven = BotDB.vCollector(table='value_main', where='name', meaning='oneseven', wNum=user.weight.get_weight('oneseven'))
+    award_referrer = BotDB.vCollector(table='value_main', where='name', meaning='award_referrer', wNum=user.weight.get_weight('award_referrer'))  # награда того кто пригласил(реферрер)
+    award_referral = BotDB.vCollector(table='value_main', where='name', meaning='award_referral', wNum=user.weight.get_weight('award_referral'))  # награда реферала перешедшего по ссылке
     d = {
-        'oneseven': oneseven,
+        'oneseven': shell_num(oneseven),
         'award_referrer': shell_num(award_referrer),
         'award_referral': shell_num(award_referral),
-        'referrer_linc': referrer_linc(message.from_user.id),
-        'get_user_referals': BotDB.get_user_referals(message.from_user.id)[1]
+        'referrer_linc': referrer_linc(user.id),
+        'get_user_referals': BotDB.get_user_referals(user.id)[1]
         }
     await message.answer(get_text('referal_invite1', format=True, d=d))
  
 
 @dp.message_handler(Text(equals=get_button('7')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('bonus')
 async def bonus(message: Message):
-    await message.answer(get_text('bonus1', format=False))  
+    user = User(message.from_user.id)
+    if user.bonus == 0:
+        return await message.answer(get_text('bonus.condition', format=False))
+
+    quantity_min = 60
+    income = income_dev_software(user.id)
+    perecnt_bonus = BotDB.vCollector(table='value_main', where='name', meaning='percent_bonus', wNum=user.weight.get_weight('percent_bonus'))
+    bonus = round((quantity_min * income) * perecnt_bonus, 2)
+    BotDB.add(key='rub', where='id_user', meaning=user.id, num=bonus)
+    BotDB.updateN(key='bonus', where='id_user', meaning=user.id, num=0)
+    await message.answer(get_text('bonus', format=True, d={'bonus': shell_num(bonus)}))  
+
+
 
 def company_keyboard(id_user):
     type_of_activity = BotDB.get(key='type_of_activity', where='id_user', meaning=id_user)
@@ -721,12 +756,11 @@ def company_keyboard(id_user):
         user = DevSoftware(id_user)
         d = {
             'name_company': user.user.company_name,
-            'profit': 'profit',
-            'income': 'income',
-            'expense': 'expense',
-            'count_place': user.quantity_all_places,
-            'count_dev': user.quantity_all_devs,
-            'count_device': user.quantity_devices 
+            'income': shell_num(income_dev_software(id_user)),
+            'expense': shell_num(salary_dev(id_user)),
+            'count_place': shell_num(user.quantity_all_places),
+            'count_dev': shell_num(user.quantity_all_devs),
+            'count_device': shell_num(user.quantity_devices) 
             }
         text_menu = get_text('company_dev_software', format=True, d=d)
         keyboard = keyboard_default.company_dev_software()
@@ -752,6 +786,7 @@ def company_keyboard(id_user):
 
 
 @dp.message_handler(Text(equals=get_button('8')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('company')
@@ -761,23 +796,29 @@ async def company(message: Message):
     await company_dev_software.Q1.set() 
 
 @dp.message_handler(Text(equals=get_button('9')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('forbs')
 async def forbs(message: Message):
-    await message.answer(get_text('forbs', format=False), reply_markup=keyboard_default.forbs())
-
+    try:
+        await message.answer(get_text('forbs', format=True, d={'t': list_forbes()}), reply_markup=keyboard_default.forbs())
+    except:
+        await message.answer(get_text('not_list_forbes_yet'), reply_markup=keyboard_default.forbs())
 
 @dp.message_handler(Text(equals=get_button('10')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('setting')
 async def setting(message: Message):
-    await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting())
+    user = User(message.from_user.id)
+    await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting(quantity_changes_name=user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
 
 # ######
 
-@dp.message_handler(Text(equals=get_button('10.2')))
+@dp.message_handler(Text(contains=get_button('10.2').split(' ')[0]))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('change_nickname')
@@ -798,11 +839,13 @@ async def change_nickname1(call: CallbackQuery):
 @dp.message_handler(state=Change_Nickname.Q1)
 @last_tap(button='-', state=True)
 async def change_nickname2(message: Message, state: FSMContext):
+    user = User(message.from_user.id)
     if message.text == get_button('*2'):
-        await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting())
+        await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting(user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
         await state.finish()
-    elif 2 > len(message.text) and len(message.text) < BotDB.vCollector(table='value_main', where='name', meaning='max_symbols_name'):
-        await message.answer(get_text('q1_1', format=False))
+    elif 2 > len(message.text) or len(message.text) > BotDB.vCollector(table='value_main', where='name', meaning='max_symbols_name'):
+        length_word = len(message.text)
+        await message.answer(get_text('q1_1', d={'word': message.text, 'length_word': length_word}))
     elif check_on_simbols(message.text) > 0:
         await message.answer(get_text('q1_2', format=False))
     elif check_nickname(message.text):
@@ -816,15 +859,16 @@ async def change_nickname2(message: Message, state: FSMContext):
 @dp.message_handler(state=Change_Nickname.Q2)
 @last_tap(button='-', state=True)
 async def change_nickname3(message: Message, state: FSMContext):
+    user = User(message.from_user.id)
     data = await state.get_data()
     answer = data.get('answer')
     if message.text == get_button('*2'):
-        await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting())
+        await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting(user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
         await state.finish()
     elif answer == message.text:
         # запись nickname(псевдонима)
-        await message.answer(get_text('change_nickname3.1', format=False), reply_markup=keyboard_default.user_setting())
         BotDB.add(key='amount_of_changes_nickname', where='id_user', meaning=message.from_user.id, num=-1)
+        await message.answer(get_text('change_nickname3.1', format=False), reply_markup=keyboard_default.user_setting(user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
         BotDB.updateT(key='nickname', where='id_user', meaning=message.from_user.id, text=answer)
         await state.finish()
     else:
@@ -832,11 +876,14 @@ async def change_nickname3(message: Message, state: FSMContext):
 
 # ######
 
-@dp.message_handler(Text(equals=get_button('10.3')))
+@dp.message_handler(Text(contains=get_button('10.3').split(' ')[0]))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('contact_support')
 async def contact_support(message: Message):
+    if BotDB.get(key='number_of_requests', where='id_user', meaning=message.from_user.id) == 0:
+        return await message.answer(get_text('not_enough_requests', format=False))
     await message.answer(get_text('contact_support', format=False), reply_markup=keyboard_default.cancel())
     await Contact_Support.Q1.set()
 
@@ -845,7 +892,7 @@ async def contact_support(message: Message):
 async def contact_support1(message: Message, state: FSMContext):
     user = User(message.from_user.id)
     if message.text == get_button('*2'):
-        await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting())
+        await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting(user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
         await state.finish()
     else:
         teg = taG()
@@ -859,7 +906,8 @@ async def contact_support1(message: Message, state: FSMContext):
         BotDB.add_support_message(tag=teg, id_user=user.id, info_message=get_text('message_in_chat_support', format=True, d=d), message=message.text)
         await bot.send_message(BotDB.vCollector(table='value_main', where='name', meaning='id_chat_support'), get_text('message_in_chat_support', format=True, d=d), reply_markup=keyboard_inline.i_am_take(teg))
         
-        await message.answer(get_text('contact_support1.2', format=False), reply_markup=keyboard_default.user_setting())
+        BotDB.add(key='number_of_requests', where='id_user', meaning=user.id, num=-1)
+        await message.answer(get_text('contact_support1.2', format=False), reply_markup=keyboard_default.user_setting(user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
         await state.finish()
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'i_am_take')
@@ -925,15 +973,16 @@ async def answer_button1(message: Message, state: FSMContext):
 # ######
 
 @dp.message_handler(Text(equals=get_button('*1')))
+@tech_break()
 @ban()
 @error_reg()
 @last_tap('back')
 async def back(message: Message):
     await message.answer(get_text('back', format=False), reply_markup=keyboard_default.main_page())
 
-@dp.message_handler(content_types=['photo'], state='*')
-async def get_PHOTO_id(message: Message):
-    await message.answer(message.photo[-1].file_id)
+# @dp.message_handler(content_types=['photo'], state='*')
+# async def get_PHOTO_id(message: Message):
+#     await message.answer(message.photo[-1].file_id)
 
 # @dp.message_handler(Text('poll'))
 # async def send_poll(message: Message):
@@ -943,11 +992,9 @@ async def get_PHOTO_id(message: Message):
 # async def anytext(poll_answer: types.PollAnswer):
 #     pprint((poll_answer.poll_id))
 
-# @dp.message_handler(content_types=)
+# @dp.message_handler(Command('Test'))
 # async def tetst(message: Message):
-#     await bot.send_message(message)
-#     text = get_text('test', format=False)
-
+#     list_forbes()
 
 
 

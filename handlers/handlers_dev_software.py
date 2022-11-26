@@ -1,4 +1,3 @@
-from curses import use_default_colors
 import time
 import datetime
 from aiogram.types import ReplyKeyboardRemove
@@ -13,11 +12,12 @@ from aiogram.types import CallbackQuery
 from aiogram.types.input_media import InputMediaPhoto
 from all_function import *
 from all_states import *
-from classes import DevSoftware
+from classes import DevSoftware, Weight
 
 
 
 @dp.message_handler(Text(equals=get_button('*1')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('back', state=True)
 async def company_q1(message: Message, state: FSMContext):
@@ -27,6 +27,7 @@ async def company_q1(message: Message, state: FSMContext):
 # #########################################
 
 @dp.message_handler(Text(equals=get_button('8.1')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def create_app(message: Message, state: FSMContext):
@@ -38,6 +39,7 @@ async def create_app(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'create_app' and call.data.split(':')[0] == 'app', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def first_app1(call: CallbackQuery, state: FSMContext):
@@ -51,7 +53,7 @@ async def first_app1(call: CallbackQuery, state: FSMContext):
         else:
             await call.answer(get_text('first_app_cancel'), show_alert=True)
     else:
-        remaining_time = cd_time - datetime.datetime.today()
+        remaining_time = cd_time - datetime.datetime.now()
         d = {
             'remaining_time': str(remaining_time).split('.')[0]
             }
@@ -59,6 +61,7 @@ async def first_app1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q9)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def first_app2(message: Message, state: FSMContext):
@@ -75,7 +78,7 @@ async def first_app2(message: Message, state: FSMContext):
     else:
         date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
         BotDB.add_new_app(id_company=user.user.id, name_app=message.text, one_pay=one_pay_app(user.user.id), income=infinity_income_app(user.user.id), date_reg=date, quantity_min_build=time_for_build(user.user.id))
-        cd = BotDB.vCollector(where='name', meaning=f'cooldown_app', table='value_it')
+        cd = BotDB.vCollector(where='name', meaning=f'cooldown_app', table='value_it', wNum=user.user.weight.get_weight('cooldown_app'))
         cd_time = datetime.datetime.strptime(date, '%X %m/%d/%Y') + datetime.timedelta(hours=cd)
         BotDB.updateT(key='cd_time_app', where='id_company', meaning=user.user.id, text=cd_time, table='dev_software')
         await message.answer(get_text('first_app2.4', format=False), reply_markup=keyboard_default.company_dev_software())
@@ -83,6 +86,7 @@ async def first_app2(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'my_top_apps' and call.data.split(':')[0] == 'app', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def my_top_apps(call: CallbackQuery, state: FSMContext):
@@ -96,6 +100,7 @@ async def my_top_apps(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'top_apps' and call.data.split(':')[0] == 'app', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def top_apps(call: CallbackQuery, state: FSMContext):
@@ -111,6 +116,7 @@ async def top_apps(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'app', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def back_to_menu_apps(call: CallbackQuery, state: FSMContext):
@@ -119,12 +125,17 @@ async def back_to_menu_apps(call: CallbackQuery, state: FSMContext):
 # #########################################
 
 @dp.message_handler(Text(equals=get_button('8.2')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def menu_data_centre(message: Message, state: FSMContext):
     user = DevSoftware(message.from_user.id)
-    home_one_pay, foreign_one_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_onepay'), BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_onepay') 
-    home_infinity_pay, foreign_infinity_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_infinitypay'), BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_infinitypay') 
+    home_one_pay, foreign_one_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_onepay', wNum=user.user.weight.get_weight('percent_datacentre_home_onepay')), \
+                                    BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_onepay', wNum=user.user.weight.get_weight('percent_datacentre_foreign_onepay')) 
+
+    home_infinity_pay, foreign_infinity_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_infinitypay', wNum=user.user.weight.get_weight('percent_datacentre_home_infinitypay')), \
+                                                 BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_infinitypay', wNum=user.user.weight.get_weight('percent_datacentre_foreign_infinitypay')) 
+
     improve_percent_one_pay = round((user.data_centre_home * home_one_pay) + (user.data_centre_foreign * foreign_one_pay), 2) * 100
     improve_percent_infinity_pay = round((user.data_centre_home * home_infinity_pay) + (user.data_centre_foreign * foreign_infinity_pay), 2) * 100
     d = {
@@ -137,13 +148,15 @@ async def menu_data_centre(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'foreign' and call.data.split(':')[0] == 'data_centre', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def data_centre_foreign(call: CallbackQuery, state: FSMContext):
-    percent_one_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_onepay') * 100
-    percent_infinity_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_infinitypay') * 100
+    weight = Weight(call.from_user.id)
+    percent_one_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_onepay', wNum=weight.get_weight('percent_datacentre_foreign_onepay')) * 100
+    percent_infinity_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_infinitypay', wNum=weight.get_weight('percent_datacentre_foreign_infinitypay')) * 100
     d = {
-        'cost_datacentre_foreign': shell_num(BotDB.vCollector(where='name', meaning=f'cost_datacentre_foreign', table='value_it')),
+        'cost_datacentre_foreign': shell_num(BotDB.vCollector(where='name', meaning=f'cost_datacentre_foreign', table='value_it', wNum=weight.get_weight('cost_datacentre_foreign'))),
         'percent_one_pay': shell_num(percent_one_pay), 
         'percent_infinity_pay': shell_num(percent_infinity_pay)
         }
@@ -151,13 +164,15 @@ async def data_centre_foreign(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'home' and call.data.split(':')[0] == 'data_centre', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def data_centre_home(call: CallbackQuery, state: FSMContext):
-    percent_one_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_onepay') * 100
-    percent_infinity_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_infinitypay') * 100
+    weight = Weight(call.from_user.id)
+    percent_one_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_onepay', wNum=weight.get_weight('percent_datacentre_home_onepay')) * 100
+    percent_infinity_pay = BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_infinitypay', wNum=weight.get_weight('percent_datacentre_home_infinitypay')) * 100
     d = {
-        'cost_datacentre_home': shell_num(BotDB.vCollector(where='name', meaning=f'cost_datacentre_home', table='value_it')),
+        'cost_datacentre_home': shell_num(BotDB.vCollector(where='name', meaning=f'cost_datacentre_home', table='value_it', wNum=weight.get_weight('cost_datacentre_home'))),
         'percent_one_pay': shell_num(percent_one_pay), 
         'percent_infinity_pay': shell_num(percent_infinity_pay)
         }
@@ -165,12 +180,17 @@ async def data_centre_home(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'data_centre', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def data_centre_back(call: CallbackQuery, state: FSMContext):
     user = DevSoftware(call.from_user.id)
-    home_one_pay, foreign_one_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_onepay'), BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_onepay') 
-    home_infinity_pay, foreign_infinity_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_infinitypay'), BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_infinitypay') 
+    home_one_pay, foreign_one_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_onepay', wNum=user.user.weight.get_weight('percent_datacentre_home_onepay')), \
+                                    BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_onepay', wNum=user.user.weight.get_weight('percent_datacentre_foreign_onepay')) 
+
+    home_infinity_pay, foreign_infinity_pay= BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_home_infinitypay', wNum=user.user.weight.get_weight('percent_datacentre_home_infinitypay')), \
+                                                 BotDB.vCollector(table='value_it', where='name', meaning='percent_datacentre_foreign_infinitypay', wNum=user.user.weight.get_weight('percent_datacentre_foreign_infinitypay')) 
+
     improve_percent_one_pay = round((user.data_centre_home * home_one_pay) + (user.data_centre_foreign * foreign_one_pay), 2) * 100
     improve_percent_infinity_pay = round((user.data_centre_home * home_infinity_pay) + (user.data_centre_foreign * foreign_infinity_pay), 2) * 100
     d = {
@@ -183,13 +203,14 @@ async def data_centre_back(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'open' and call.data.split(':')[0] == 'data_centre', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def open_data_centre1(call: CallbackQuery, state: FSMContext):
     user = DevSoftware(call.from_user.id)
     place = call.data.split(':')[2]
     currency = 'rub' if call.data.split(':')[2] == 'home' else 'usd'
-    cost_datacentre = BotDB.vCollector(where='name', meaning=f'cost_datacentre_{place}', table='value_it')
+    cost_datacentre = BotDB.vCollector(where='name', meaning=f'cost_datacentre_{place}', table='value_it', wNum=user.user.weight.get_weight(f'cost_datacentre_{place}'))
     if BotDB.get(key=currency, where='id_user', meaning=user.user.id) >= cost_datacentre:
         await bot.delete_message(chat_id=user.user.id, message_id=call.message.message_id)
         BotDB.add(key=currency, where='id_user', meaning=user.user.id, num=-cost_datacentre)
@@ -201,6 +222,7 @@ async def open_data_centre1(call: CallbackQuery, state: FSMContext):
 # #########################################
 
 @dp.message_handler(Text(equals=get_button('8.3')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def menu_marketing_lab(message: Message, state: FSMContext):
@@ -208,6 +230,7 @@ async def menu_marketing_lab(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'simple' and call.data.split(':')[0] == 'marketing_lab', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def marketing_lab_simple(call: CallbackQuery, state: FSMContext):
@@ -215,6 +238,7 @@ async def marketing_lab_simple(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'hard' and call.data.split(':')[0] == 'marketing_lab', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def marketing_lab_hard(call: CallbackQuery, state: FSMContext):
@@ -222,6 +246,7 @@ async def marketing_lab_hard(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'marketing_lab', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def marketing_lab_back(call: CallbackQuery, state: FSMContext):
@@ -242,6 +267,7 @@ async def marketing_lab_back(call: CallbackQuery, state: FSMContext):
 # #########################################
 
 @dp.message_handler(Text(equals=get_button('8.4')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def hire_dev(message: Message, state: FSMContext):
@@ -249,8 +275,8 @@ async def hire_dev(message: Message, state: FSMContext):
     l = [{
         'description': get_text(f'description_dev_1', format=False),
         'quantity': shell_num(user.get_quantity_dev(1)),
-        'salary': shell_num(BotDB.vCollector(where='name', meaning=f'salary_dev_1', table='value_it')),
-        'income': shell_num(BotDB.vCollector(where='name', meaning=f'income_dev_1', table='value_it')),
+        'salary': shell_num(BotDB.vCollector(where='name', meaning=f'salary_dev_1', table='value_it', wNum=user.user.weight.get_weight('salary_dev_1'))),
+        'income': shell_num(BotDB.vCollector(where='name', meaning=f'income_dev_1', table='value_it', wNum=user.user.weight.get_weight('income_dev_1'))),
         'photo': get_photo(f'photo_dev_1')
     }]
     async with state.proxy() as data:
@@ -259,6 +285,7 @@ async def hire_dev(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'dev' and call.data.split(':')[0] == 'left', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def hire_dev_left(call: CallbackQuery, state: FSMContext):
@@ -268,8 +295,8 @@ async def hire_dev_left(call: CallbackQuery, state: FSMContext):
         l.append({
             'description': get_text(f'description_dev_{i}', format=False),
             'quantity': shell_num(user.get_quantity_dev(i)),
-            'salary': shell_num(BotDB.vCollector(where='name', meaning=f'salary_dev_{i}', table='value_it')),
-            'income': shell_num(BotDB.vCollector(where='name', meaning=f'income_dev_{i}', table='value_it')),
+            'salary': shell_num(BotDB.vCollector(where='name', meaning=f'salary_dev_{i}', table='value_it', wNum=user.user.weight.get_weight(f'salary_dev_{i}'))),
+            'income': shell_num(BotDB.vCollector(where='name', meaning=f'income_dev_{i}', table='value_it', wNum=user.user.weight.get_weight(f'income_dev_{i}'))),
             'photo': get_photo(f'photo_dev_{i}')
         })
     async with state.proxy() as data:
@@ -282,6 +309,7 @@ async def hire_dev_left(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'dev' and call.data.split(':')[0] == 'right', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def hire_dev_right(call: CallbackQuery, state: FSMContext):
@@ -291,8 +319,8 @@ async def hire_dev_right(call: CallbackQuery, state: FSMContext):
         l.append({
             'description': get_text(f'description_dev_{i}', format=False),
             'quantity': shell_num(user.get_quantity_dev(i)),
-            'salary': shell_num(BotDB.vCollector(where='name', meaning=f'salary_dev_{i}', table='value_it')),
-            'income': shell_num(BotDB.vCollector(where='name', meaning=f'income_dev_{i}', table='value_it')),
+            'salary': shell_num(BotDB.vCollector(where='name', meaning=f'salary_dev_{i}', table='value_it', wNum=user.user.weight.get_weight(f'salary_dev_{i}'))),
+            'income': shell_num(BotDB.vCollector(where='name', meaning=f'income_dev_{i}', table='value_it', wNum=user.user.weight.get_weight(f'income_dev_{i}'))),
             'photo': get_photo(f'photo_dev_{i}')
         })
     async with state.proxy() as data:
@@ -305,10 +333,11 @@ async def hire_dev_right(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'dev' and call.data.split(':')[0] == 'hire', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def hire_dev1(call: CallbackQuery, state: FSMContext):
-    user = DevSoftware(call.from_user)
+    user = DevSoftware(call.from_user.id)
     data = await state.get_data()
     dic = data.get('l')
     index = int(call.data.split(':')[2]) + 1
@@ -319,13 +348,14 @@ async def hire_dev1(call: CallbackQuery, state: FSMContext):
         d = {
             'available': shell_num(available(user.user.id, float(cleannum(dic[index-1]['salary']))))
             }
-        await bot.send_message(user.id, get_text('hire_dev1.1', format=True, d=d), reply_markup=keyboard_default.cancel())
+        await bot.send_message(user.user.id, get_text('hire_dev1.1', format=True, d=d), reply_markup=keyboard_default.cancel())
         await company_dev_software.Q2.set()
     else:
         await call.answer(get_text('hire_dev1.2'), show_alert=True)
 
 
 @dp.message_handler(state=company_dev_software.Q2)
+@tech_break_call(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def hire_dev2(message: Message, state: FSMContext):
@@ -358,11 +388,12 @@ async def hire_dev2(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'dev' and call.data.split(':')[0] == 'dismiss', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def dismiss_dev1(call: CallbackQuery, state: FSMContext):
-    user = DevSoftware(call.from_user)
-    index =int(call.data.split(':')[2]) + 1
+    user = DevSoftware(call.from_user.id)
+    index = int(call.data.split(':')[2]) + 1
     async with state.proxy() as data:
         data['index'] = index
     if user.get_quantity_dev(index) > 0:
@@ -378,6 +409,7 @@ async def dismiss_dev1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q6)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def dismiss_dev2(message: Message, state: FSMContext):
@@ -401,6 +433,7 @@ async def dismiss_dev2(message: Message, state: FSMContext):
 # #########################################
 
 @dp.message_handler(Text(equals=get_button('8.6')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def office_dev(message: Message, state: FSMContext):
@@ -409,9 +442,9 @@ async def office_dev(message: Message, state: FSMContext):
             'description': get_text(f'description_office_1', format=False),
             'quantity_buy': shell_num(user.get_quantity_buy_office(1)),
             'quantity_rent': shell_num(user.get_quantity_rent_office(1)),
-            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_office_1', table='value_it')),
-            'rent_cost': shell_num(BotDB.vCollector(where='name', meaning=f'rent_cost_office_1', table='value_it')),
-            'size': shell_num(BotDB.vCollector(where='name', meaning=f'size_office_1', table='value_it')),
+            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_office_1', table='value_it', wNum=user.user.weight.get_weight('cost_office_1'))),
+            'rent_cost': shell_num(BotDB.vCollector(where='name', meaning=f'rent_cost_office_1', table='value_it', wNum=user.user.weight.get_weight('rent_cost_office_1'))),
+            'size': shell_num(BotDB.vCollector(where='name', meaning=f'size_office_1', table='value_it', wNum=user.user.weight.get_weight('size_office_1'))),
             'photo': get_photo(f'photo_office_1')
         }]
         async with state.proxy() as data:
@@ -420,6 +453,7 @@ async def office_dev(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'office' and call.data.split(':')[0] == 'left', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def office_dev_left(call: CallbackQuery, state: FSMContext):
@@ -430,9 +464,9 @@ async def office_dev_left(call: CallbackQuery, state: FSMContext):
             'description': get_text(f'description_office_{i}', format=False),
             'quantity_buy': shell_num(user.get_quantity_buy_office(i)),
             'quantity_rent': shell_num(user.get_quantity_rent_office(i)),
-            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it')),
-            'rent_cost': shell_num(BotDB.vCollector(where='name', meaning=f'rent_cost_office_{i}', table='value_it')),
-            'size': shell_num(BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it')),
+            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it', wNum=user.user.weight.get_weight(f'cost_office_{i}'))),
+            'rent_cost': shell_num(BotDB.vCollector(where='name', meaning=f'rent_cost_office_{i}', table='value_it', wNum=user.user.weight.get_weight(f'rent_cost_office_{i}'))),
+            'size': shell_num(BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it', wNum=user.user.weight.get_weight(f'size_office_{i}'))),
             'photo': get_photo(f'photo_office_{i}')
         })
     async with state.proxy() as data:
@@ -445,6 +479,7 @@ async def office_dev_left(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'office' and call.data.split(':')[0] == 'right', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def office_dev_right(call: CallbackQuery, state: FSMContext):
@@ -455,9 +490,9 @@ async def office_dev_right(call: CallbackQuery, state: FSMContext):
             'description': get_text(f'description_office_{i}', format=False),
             'quantity_buy': shell_num(user.get_quantity_buy_office(i)),
             'quantity_rent': shell_num(user.get_quantity_rent_office(i)),
-            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it')),
-            'rent_cost': shell_num(BotDB.vCollector(where='name', meaning=f'rent_cost_office_{i}', table='value_it')),
-            'size': shell_num(BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it')),
+            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_office_{i}', table='value_it', wNum=user.user.weight.get_weight(f'cost_office_{i}'))),
+            'rent_cost': shell_num(BotDB.vCollector(where='name', meaning=f'rent_cost_office_{i}', table='value_it', wNum=user.user.weight.get_weight(f'rent_cost_office_{i}'))),
+            'size': shell_num(BotDB.vCollector(where='name', meaning=f'size_office_{i}', table='value_it', wNum=user.user.weight.get_weight(f'size_office_{i}'))),
             'photo': get_photo(f'photo_office_{i}')
         })
     async with state.proxy() as data:
@@ -470,6 +505,7 @@ async def office_dev_right(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'office' and call.data.split(':')[0] == 'buy', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def buy_office1(call: CallbackQuery, state: FSMContext):
@@ -491,6 +527,7 @@ async def buy_office1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q3)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def buy_office2(message: Message, state: FSMContext):
@@ -516,6 +553,7 @@ async def buy_office2(message: Message, state: FSMContext):
 
     
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'office' and call.data.split(':')[0] == 'rent', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def rent_office1(call: CallbackQuery, state: FSMContext):
@@ -537,6 +575,7 @@ async def rent_office1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q4)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def rent_office2(message: Message, state: FSMContext):
@@ -567,6 +606,7 @@ async def rent_office2(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'office' and call.data.split(':')[0] == 'sell', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def sell_office1(call: CallbackQuery, state: FSMContext):
@@ -583,6 +623,7 @@ async def sell_office1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q5)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def sell_office2(message: Message, state: FSMContext):
@@ -596,7 +637,7 @@ async def sell_office2(message: Message, state: FSMContext):
         index = data.get('index')
         dic = data.get('l')
         if int(cleannum(dic[index-1]['quantity_buy'])) - int(cleannums) >= 0:
-            percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_office', table='value_it')
+            percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_office', table='value_it', wNum=user.user.weight.get_weight('percent_back_money_office'))
             pay = round(float(cleannum(dic[index-1]['cost'])) * int(cleannums) * percent_back, 2)
             BotDB.add(key='rub', where='id_user', meaning=user.user.id, num=pay)
             add_2dot_data(key=f'quantity_office_{index}', where='id_company', meaning=user.user.id, table='dev_software', meaning_data='1', add_data='buy', add=-int(cleannums))
@@ -609,6 +650,7 @@ async def sell_office2(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'office' and call.data.split(':')[0] == 'stoprent', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def stoprent_office1(call: CallbackQuery, state: FSMContext):
@@ -625,6 +667,7 @@ async def stoprent_office1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q10)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def stoprent_office2(message: Message, state: FSMContext):
@@ -638,7 +681,7 @@ async def stoprent_office2(message: Message, state: FSMContext):
         index = data.get('index')
         dic = data.get('l')
         if int(cleannum(dic[index-1]['quantity_rent'])) - int(cleannums) >= 0:
-            percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_office_rent', table='value_it')
+            percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_office_rent', table='value_it', wNum=user.user.weight.get_weight('percent_back_money_office_rent'))
             pay = round(float(cleannum(dic[index-1]['rent_cost'])) * int(cleannums) * percent_back, 2)
             BotDB.add(key='rub', where='id_user', meaning=user.user.id, num=pay)
             add_2dot_data(key=f'quantity_office_{index}', where='id_company', meaning=user.user.id, table='dev_software', meaning_data='1', add_data='rent', add=-int(cleannums))
@@ -652,6 +695,7 @@ async def stoprent_office2(message: Message, state: FSMContext):
 # #########################################
 
 @dp.message_handler(Text(equals=get_button('8.5')), state=company_dev_software.Q1)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def device_menu(message: Message, state: FSMContext):
@@ -664,6 +708,7 @@ async def device_menu(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'back' and call.data.split(':')[0] == 'device', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def back_to_device(call: CallbackQuery, state: FSMContext):
@@ -677,6 +722,7 @@ async def back_to_device(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'device_item', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def device_item(call: CallbackQuery, state: FSMContext):
@@ -685,8 +731,8 @@ async def device_item(call: CallbackQuery, state: FSMContext):
     l = [{
             'description': get_text(f'description_device_{device_item}_1', format=False),
             'quantity': shell_num(user.get_quantity_device(device_item, 1)),
-            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_device_{device_item}_1', table='value_it')),
-            'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_device_{device_item}_1', table='value_it'))
+            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_device_{device_item}_1', table='value_it', wNum=user.user.weight.get_weight(f'cost_device_{device_item}_1'))),
+            'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_device_{device_item}_1', table='value_it', wNum=user.user.weight.get_weight(f'percent_device_{device_item}_1')))
         }]
     async with state.proxy() as data:
         data['l'] = l
@@ -695,6 +741,7 @@ async def device_item(call: CallbackQuery, state: FSMContext):
 
    
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'device' and call.data.split(':')[0] == 'left', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def device_left(call: CallbackQuery, state: FSMContext):
@@ -708,8 +755,8 @@ async def device_left(call: CallbackQuery, state: FSMContext):
         l.append({
             'description': get_text(f'description_device_{device_item}_{i}', format=False),
             'quantity': shell_num(user.get_quantity_device(device_item, i)),
-            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_device_{device_item}_{i}', table='value_it')),
-            'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_device_{device_item}_{i}', table='value_it'))
+            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_device_{device_item}_{i}', table='value_it', wNum=user.user.weight.get_weight(f'cost_device_{device_item}_{i}'))),
+            'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_device_{device_item}_{i}', table='value_it', wNum=user.user.weight.get_weight(f'percent_device_{device_item}_{i}')))
         })
         try:
             i+=1
@@ -726,6 +773,7 @@ async def device_left(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'device' and call.data.split(':')[0] == 'right', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def device_right(call: CallbackQuery, state: FSMContext):
@@ -739,8 +787,8 @@ async def device_right(call: CallbackQuery, state: FSMContext):
         l.append({
             'description': get_text(f'description_device_{device_item}_{i}', format=False),
             'quantity': shell_num(user.get_quantity_device(device_item, i)),
-            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_device_{device_item}_{i}', table='value_it')),
-            'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_device_{device_item}_{i}', table='value_it'))
+            'cost': shell_num(BotDB.vCollector(where='name', meaning=f'cost_device_{device_item}_{i}', table='value_it', wNum=user.user.weight.get_weight(f'cost_device_{device_item}_{i}'))),
+            'percent': shell_num(BotDB.vCollector(where='name', meaning=f'percent_device_{device_item}_{i}', table='value_it', wNum=user.user.weight.get_weight(f'percent_device_{device_item}_{i}')))
         })
         i+=1
         try:
@@ -757,6 +805,7 @@ async def device_right(call: CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'device' and call.data.split(':')[0] == 'buy', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def buy_device1(call: CallbackQuery, state: FSMContext):
@@ -779,6 +828,7 @@ async def buy_device1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q7)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def buy_device2(message: Message, state: FSMContext):
@@ -808,6 +858,7 @@ async def buy_device2(message: Message, state: FSMContext):
 
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'device' and call.data.split(':')[0] == 'sell', state=company_dev_software.Q1)
+@tech_break_call(state=True)
 @ban_call(state=True)
 @last_tap_call('-', state=True)
 async def sell_device1(call: CallbackQuery, state: FSMContext):
@@ -826,6 +877,7 @@ async def sell_device1(call: CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=company_dev_software.Q8)
+@tech_break(state=True)
 @ban(state=True)
 @last_tap('-', state=True)
 async def sell_device2(message: Message, state: FSMContext):
@@ -840,7 +892,7 @@ async def sell_device2(message: Message, state: FSMContext):
         device = data.get('device')
         dic = data.get('l')
         if user.get_quantity_device(device, index) >= int(cleannums):
-            percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_device', table='value_it')
+            percent_back = BotDB.vCollector(where='name', meaning='percent_back_money_device', table='value_it', wNum=user.user.weight.get_weight('percent_back_money_device'))
             pay = round(float(cleannum(dic[index-1]['cost'])) * int(cleannums) * percent_back, 2)
             BotDB.add(key='rub', where='id_user', meaning=user.user.id, num=pay)
             add_2dot_data(key=f'quantity_device_{device}', where='id_company', meaning=user.user.id, table='dev_software', add=-int(cleannums), where_data='lvl', meaning_data=str(index), add_data='quantity')  
@@ -854,6 +906,7 @@ async def sell_device2(message: Message, state: FSMContext):
 # #########################################
 
 @dp.message_handler(content_types=['text'])
+@tech_break()
 @ban()
 @error_reg()
 @last_tap(button='anytext')

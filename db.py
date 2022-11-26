@@ -14,10 +14,14 @@ class BotDB:
     def get_user_referals(self,id_user):
         '''Получаем кортеж состоящий из ([список], кол-во) рефералов юзера'''
         result = [i[0] for i in self.cur.execute(f'SELECT username FROM users WHERE referrer = "{id_user}"')]
-        return (result,len(result))
+        return (result, len(result))
 
     def add_new_text(self, name):
         self.cur.execute("INSERT INTO `texts` (`name`) VALUES (?)", (name,))
+        return self.conn.commit()
+    
+    def add_new_slot_weights(self, id_user):
+        self.cur.execute("INSERT INTO `weights` (`id_user`) VALUES (?)", (id_user,))
         return self.conn.commit()
     
     def add_new_button(self, number):
@@ -27,6 +31,7 @@ class BotDB:
     def add_user(self, id_user):
         """Добавляем юзера в базу"""
         self.cur.execute("INSERT INTO `users` (`id_user`) VALUES (?)", (id_user,))
+        self.add_new_slot_weights(id_user)
         return self.conn.commit()
     
     def add_support_message(self, tag, id_user, message, info_message):
@@ -90,20 +95,16 @@ class BotDB:
         self.cur.execute(f"""UPDATE {table} SET {key} = {num} WHERE {where} = '{meaning}'""")
         return self.conn.commit()
 
-    def count_dev(self, id_user):
-        quantity = 0
-        for i in range(1,3+1):
-            quantity += self.cur.execute(f"""SELECT quantity_dev_{i} FROM dev_software WHERE id_company = '{id_user}'""").fetchone()[0]
-        return quantity
-
-    def vCollector(self, table, where, meaning, mn=False) -> tuple:
+    def vCollector(self, table, where, meaning, wNum=(1, 0), perc=False, mn=False) -> float:
         ratio = self.cur.execute(f"""SELECT ratio FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
         main_num = self.cur.execute(f"""SELECT main_num FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
         plus_num = self.cur.execute(f"""SELECT plus_num FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
-        num = ratio * main_num + plus_num
-        margin = ratio - 1 * 100
-        if mn:
-            return (num, margin)
+        unique_ratio, unique_plus = wNum
+        i = 100 if perc == True else 1
+        num = ((unique_ratio - 1) + ratio) * main_num + ((plus_num + unique_plus) / i)
+        # margin = (ratio + wNum - 1) * 100
+        # if mn:
+        #     return (num, margin)
         return num
 
 
