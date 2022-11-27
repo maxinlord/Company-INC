@@ -21,8 +21,6 @@ async def job_minute():
         [BotDB.add(key='rub', where='id_user', meaning=i, num=income_dev_software(i)) for i in
          BotDB.get_all('id_company', 'dev_software')]
         check_apps_done()
-    else:
-        pass
 
 
 async def job_hour():
@@ -30,8 +28,6 @@ async def job_hour():
     if date[1] == '00':
         [BotDB.add(key='rub', where='id_user', meaning=i, num=-salary_dev(i)) for i in
          BotDB.get_all('id_company', 'dev_software')]
-    else:
-        pass
 
 
 async def job_take_rent():

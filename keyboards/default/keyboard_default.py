@@ -227,6 +227,19 @@ def menu_stocks():
     )
     return menu_stocks
 
+def choice_curr():
+    menu_stocks = ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=get_button('3.1.1')), KeyboardButton(text=get_button('3.1.2'))
+            ],
+            [
+               KeyboardButton(text=get_button('*2'))
+            ]
+        ],
+        resize_keyboard=True
+    )
+    return menu_stocks
 
 def cancel():
     cancel = ReplyKeyboardMarkup(

@@ -49,8 +49,9 @@ class BotDB:
         self.cur.execute(f"INSERT INTO {table} (id_company, name_founder) VALUES (?,?)", (id_user, name))
         return self.conn.commit()
     
-    def add_stocks(self, id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income):
-        self.cur.execute(f"INSERT INTO stocks (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income) VALUES (?, ?, ?, ?, ?, ?)", (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income))
+    def add_stocks(self, id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income, currency):
+        self.cur.execute("INSERT INTO stocks (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income, currency) VALUES (?, ?, ?, ?, ?, ?, ?)", (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income, currency))
+
         return self.conn.commit()
 
     def add(self, key, where, meaning, table='users', num=0):
@@ -101,11 +102,7 @@ class BotDB:
         plus_num = self.cur.execute(f"""SELECT plus_num FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
         unique_ratio, unique_plus = wNum
         i = 100 if perc == True else 1
-        num = ((unique_ratio - 1) + ratio) * main_num + ((plus_num + unique_plus) / i)
-        # margin = (ratio + wNum - 1) * 100
-        # if mn:
-        #     return (num, margin)
-        return num
+        return ((unique_ratio - 1) + ratio) * main_num + ((plus_num + unique_plus) / i)
 
 
     def close(self):

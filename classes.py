@@ -84,7 +84,7 @@ class DevSoftware:
         self.user: User = User(id_company)
 
     def get_quantity_dev(self, dev: int):
-        if int(dev) in [1, 2, 3]:
+        if dev in {1, 2, 3}:
             return self.user.BotDB.get(key=f'quantity_dev_{dev}', where='id_company', meaning=self.user.id,
                                        table='dev_software')
 
@@ -125,28 +125,26 @@ class DevSoftware:
 
     @property
     def data_centre_foreign(self):
-        return get_2dot_data(key=f'data_centre', where='id_company', meaning=self.user.id, table='dev_software',
-                             meaning_data='1', get_data='foreign')
+        return get_2dot_data(key='data_centre', where='id_company', meaning=self.user.id, table='dev_software', meaning_data='1', get_data='foreign')
 
     @property
     def data_centre_home(self):
-        return get_2dot_data(key=f'data_centre', where='id_company', meaning=self.user.id, table='dev_software',
-                             meaning_data='1', get_data='home')
+        return get_2dot_data(key='data_centre', where='id_company', meaning=self.user.id, table='dev_software', meaning_data='1', get_data='home')
 
     @property
     def cd_time_app(self):
-        return self.user.BotDB.get(key=f'cd_time_app', where='id_company', meaning=self.user.id, table='dev_software')
+        return self.user.BotDB.get(key='cd_time_app', where='id_company', meaning=self.user.id, table='dev_software')
 
     @property
     def quantity_all_devs(self):
-        return sum([self.get_quantity_dev(i) for i in range(1, 3 + 1)])
+        return sum(self.get_quantity_dev(i) for i in range(1, 3 + 1))
 
     @property
     def quantity_all_places(self):
         i = 1
         y = True
-        own_base_places = BotDB.vCollector(table='value_it', where='name', meaning='own_base_office',
-                                           wNum=self.user.weight.get_weight(f'own_base_office'))
+        own_base_places = BotDB.vCollector(table='value_it', where='name', meaning='own_base_office', wNum=self.user.weight.get_weight('own_base_office'))
+
         places = own_base_places
         while y:
             p = parse_2dot_data(key=f'quantity_office_{i}', where='id_company', meaning=self.user.id,

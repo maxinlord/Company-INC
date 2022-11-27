@@ -1,3 +1,4 @@
+from decimal import getcontext
 import math
 import time
 from pprint import pprint
@@ -416,11 +417,27 @@ async def create_stocks2(message: Message, state: FSMContext):
 
         async with state.proxy() as data:
                 data['percent_of_income'] = num/100
+        await message.answer(get_text('create_stocks9.1', format=False), reply_markup=keyboard_default.choice_curr())
+        await stocks.Q9.set()
+    else:
+        await message.answer(get_text('create_stocks2.3', format=False))
+
+@dp.message_handler(state=stocks.Q9)
+@last_tap('-', state=True)
+async def create_stocks9(message: Message, state: FSMContext):
+    if message.text == get_button('*2'):
+        await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
+        await state.finish()
+    elif message.text == get_button('3.1.1') or message.text == get_button('3.1.2'):
+        curr = 'rub' if message.text == get_button('3.1.1') else 'usd'
+        async with state.proxy() as data:
+                data['currency'] = curr
         await message.answer(get_text('create_stocks2.1', format=False))
         await stocks.Q2.set()
     else:
-        await message.answer(get_text('create_stocks2.3', format=False))
-    
+        await message.answer(get_text('create_stocks9.3', format=False))
+
+
 @dp.message_handler(state=stocks.Q2)
 @last_tap('-', state=True)
 async def create_stocks3(message: Message, state: FSMContext):
@@ -450,10 +467,11 @@ async def create_stocks4(message: Message, state: FSMContext):
         if num < BotDB.vCollector(where='name', meaning=f'min_price_stocks', table='value_main'):
             return await message.answer(get_text('create_stocks4.condition', format=False))
         data = await state.get_data()
+        currency = data.get('currency')
         percent_of_income = data.get('percent_of_income')
         quantity_stocks = data.get('quantity_stocks')
-        percent_for_one_stock = round(float(percent_of_income) / float(quantity_stocks), 11)
-        BotDB.add_stocks(id_slot=taG(), id_stocks=user.id, percent_of_income=percent_for_one_stock, quantity_stocks=quantity_stocks, price_one_stock=num, seller=user.id)
+        percent_for_one_stock = Decimal(str(percent_of_income)) / Decimal(str(quantity_stocks))
+        BotDB.add_stocks(id_slot=taG(), id_stocks=user.id, percent_of_income=float(percent_for_one_stock), quantity_stocks=quantity_stocks, price_one_stock=num, seller=user.id, currency=currency)
         await message.answer(get_text('create_stocks4.1', format=False), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
     else:

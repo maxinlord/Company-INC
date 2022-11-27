@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import random
 import re
 import string
@@ -18,9 +19,7 @@ from dispatcher import bot, BotDB
 # #########################################
 
 def check_name_app(name_app):
-    if name_app in BotDB.get_all('name_app', table='dev_software_apps'):
-        return True
-    return False
+    return name_app in BotDB.get_all('name_app', table='dev_software_apps')
 
 
 # #########################################
@@ -30,9 +29,7 @@ def get_weight(id_user, name_weight):
                           where_data='name_weight', meaning_data=name_weight, get_data='wRatio')
     plus = get_2dot_data(table='weights', key='user_weights', where='id_user', meaning=id_user,
                          where_data='name_weight', meaning_data=name_weight, get_data='wPlus')
-    if ratio:
-        return (ratio, plus)
-    return (1, 0)
+    return (ratio, plus) if ratio else (1, 0)
 
 
 # ########################################
@@ -45,12 +42,14 @@ def one_pay_app(id_company):
     data_centre_h, data_centre_f = [
         get_2dot_data(table='dev_software', key='data_centre', where='id_company', meaning=id_company, meaning_data='1',
                       get_data=i) for i in ['home', 'foreign']]
-    d = {'percent_datacentre_home_infinitypay': data_centre_h, 'percent_datacentre_foreign_infinitypay': data_centre_f}
+    d = {'percent_datacentre_home_infinitypay': data_centre_h,
+         'percent_datacentre_foreign_infinitypay': data_centre_f}
     percent_h, percent_f = [
         BotDB.vCollector(wNum=get_weight(id_company, i), table='value_it', where='name', meaning=i) * d[i] for i in d]
 
     for j in range(1, 3 + 1):
-        quantity_dev = BotDB.get(key=f'quantity_dev_{j}', where='id_company', meaning=id_company, table='dev_software')
+        quantity_dev = BotDB.get(
+            key=f'quantity_dev_{j}', where='id_company', meaning=id_company, table='dev_software')
         all_mark += quantity_dev * j
         for i in count_percent_device(device_k, id_company, viev=False):
             income_dev = BotDB.vCollector(wNum=get_weight(id_company, f'income_dev_{j}'), table='value_it',
@@ -77,7 +76,8 @@ def infinity_income_app(id_company):
     data_centre_h, data_centre_f = [
         get_2dot_data(table='dev_software', key='data_centre', where='id_company', meaning=id_company, meaning_data='1',
                       get_data=i) for i in ['home', 'foreign']]
-    d = {'percent_datacentre_home_infinitypay': data_centre_h, 'percent_datacentre_foreign_infinitypay': data_centre_f}
+    d = {'percent_datacentre_home_infinitypay': data_centre_h,
+         'percent_datacentre_foreign_infinitypay': data_centre_f}
     percent_h, percent_f = [
         BotDB.vCollector(wNum=get_weight(id_company, i), table='value_it', where='name', meaning=i) * d[i] for i in d]
 
@@ -95,7 +95,7 @@ def infinity_income_app(id_company):
     return average_income
 
 
-def time_for_build(id_company):
+def time_for_build(id_company):  # sourcery skip: avoid-builtin-shadow
     min = sum(
         [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') * (4 - i) for
          i in range(1, 3 + 1)])
@@ -179,8 +179,9 @@ def app_menu_data(id_company):
         if i[1] == 0 and i[0] == id_company:
             date_reg = i[4]
             date_formatter = '%X %m/%d/%Y'
-            future = datetime.datetime.strptime(date_reg, date_formatter) + datetime.timedelta(minutes=i[3])
-            x = str(future - datetime.datetime.today()).split('.')[0]
+            future = datetime.datetime.strptime(
+                date_reg, date_formatter) + datetime.timedelta(minutes=i[3])
+            x = str(future - datetime.datetime.now()).split('.')[0]
             d = {'time_left': x}
             time_left = get_text('time_left_for_build_app', format=True, d=d)
     d = {
@@ -192,6 +193,7 @@ def app_menu_data(id_company):
 
 # #########################################
 
+
 def check_apps_done():
     for i in BotDB.get_alls_with_order(keys='id_company, done, date_reg, quantity_min_build', order='done',
                                        table='dev_software_apps'):
@@ -199,15 +201,17 @@ def check_apps_done():
             continue
         date_reg = i[2]
         date_formatter = '%X %m/%d/%Y'
-        future = datetime.datetime.strptime(date_reg, date_formatter) + datetime.timedelta(minutes=i[3])
-        if datetime.datetime.today() >= future:
-            BotDB.updateN(key='done', where='id_company', meaning=i[0], num=1, table='dev_software_apps')
-
+        future = datetime.datetime.strptime(
+            date_reg, date_formatter) + datetime.timedelta(minutes=i[3])
+        if datetime.datetime.now() >= future:
+            BotDB.updateN(key='done', where='id_company',
+                          meaning=i[0], num=1, table='dev_software_apps')
 
 
 # #########################################
 
 def calculate_pay_dev(quantity: int, salary_hour: Union[int, float]):
+    # sourcery skip: avoid-builtin-shadow
     min = int(time.strftime('%M'))
     min_job = 60 - min
     first_salary = round((min_job * salary_hour / 60) * quantity, 2)
@@ -215,14 +219,15 @@ def calculate_pay_dev(quantity: int, salary_hour: Union[int, float]):
 
 
 def calculate_pay_rent(quantity: int, cost_rent_day: Union[int, float]) -> Tuple[Union[int, float], int, int]:
-    day, month, year = time.strftime('%d'), time.strftime('%m'), time.strftime('%Y')
-    day = int(time.strftime('%d')) + 1 if datetime.datetime.strptime(f'19:00:00 {month}/{day}/{year}',
-                                                                     '%H:%M:%S %m/%d/%Y') < datetime.datetime.today() else time.strftime(
-        '%d')
-    t = datetime.datetime.strptime(f'19:00:00 {month}/{day}/{year}', '%H:%M:%S %m/%d/%Y') - datetime.datetime.today()
+    day, month, year = time.strftime(
+        '%d'), time.strftime('%m'), time.strftime('%Y')
+    day = int(time.strftime('%d')) + 1 if datetime.datetime.strptime(f'19:00:00 {month}/{day}/{year}', '%H:%M:%S %m/%d/%Y') < datetime.datetime.now() else time.strftime('%d')
+
+    t = datetime.datetime.strptime(f'19:00:00 {month}/{day}/{year}', '%H:%M:%S %m/%d/%Y') - datetime.datetime.now()
+
     min_rent = t.seconds // 60
     hours = min_rent // 60
-    mins = 0 if min_rent % 60 + 1 == 60 else min_rent % 60 + 1
+    mins = 0 if min_rent % 60 == 59 else min_rent % 60 + 1
     first_salary = round((min_rent * cost_rent_day / (24 * 60)) * quantity, 2)
     return first_salary, hours, mins
 
@@ -234,7 +239,8 @@ def quantity_place_company(id_company):
     y = True
     places = 0
     while y:
-        p = parse_2dot_data(key=f'quantity_office_{i}', where='id_company', meaning=id_company, table='dev_software')
+        p = parse_2dot_data(
+            key=f'quantity_office_{i}', where='id_company', meaning=id_company, table='dev_software')
         places += (p[1][1] + p[1][2]) * BotDB.vCollector(wNum=get_weight(id_company, f'size_office_{i}'), where='name',
                                                          meaning=f'size_office_{i}', table='value_it')
         i += 1
@@ -247,9 +253,7 @@ def quantity_place_company(id_company):
 
 
 def quantity_devs_company(id_company):
-    return sum(
-        [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in
-         range(1, 3 + 1)])
+    return sum(BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 3 + 1))
 
 
 def quantity_devices(id_company):
@@ -265,7 +269,8 @@ def quantity_devices(id_company):
             q_devices += i[ind_q]
         try:
             ind += 1
-            BotDB.get(table='dev_software', key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
+            BotDB.get(table='dev_software',
+                      key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
         except:
             y = False
     return q_devices
@@ -285,9 +290,7 @@ def create_mat_percents(id_company):
             s = []
             true_q_device = i[1]
             if i[0] > 1:
-                u = 0
-                for t in range(1, i[0]):
-                    u += q_device[t - 1][1]
+                u = sum(q_device[t - 1][1] for t in range(1, i[0]))
                 s = [0] * u + s
             elif i[1] == 0:
                 continue
@@ -308,7 +311,8 @@ def create_mat_percents(id_company):
             devices_k.append([f'{ind}_{i[0]}'] + s)
         try:
             ind += 1
-            BotDB.get(table='dev_software', key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
+            BotDB.get(table='dev_software',
+                      key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
         except:
             y = False
     # pprint(devices_k, width=300)
@@ -316,16 +320,15 @@ def create_mat_percents(id_company):
 
 
 def count_percent_device(device_k, id_company, viev=True):
+    # sourcery skip: avoid-builtin-shadow
     q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in
               range(1, 3 + 1)]
     dev_name = ['junior', 'middle', 'senior']
     percents = []
     for i in range(1, quantity_devs_company(id_company) + 1):
-        percent = 0
-        for x in range(len(device_k)):
-            if device_k[x][i] == 1:
-                percent += BotDB.vCollector(wNum=get_weight(id_company, f'percent_device_{device_k[x][0]}'),
-                                            where='name', meaning=f'percent_device_{device_k[x][0]}', table='value_it')
+        percent = sum(BotDB.vCollector(wNum=get_weight(
+            id_company, f'percent_device_{device_k[x][0]}'), where='name', meaning=f'percent_device_{device_k[x][0]}', table='value_it') for x in range(len(device_k)) if device_k[x][i] == 1)
+
         percents.append(round(percent, 2))
     text = ''
     l = []
@@ -339,7 +342,8 @@ def count_percent_device(device_k, id_company, viev=True):
                 'percent': shell_num(j * 100)
             }
             if viev:
-                text += get_text('template_string_count_percent_device', format=True, d=d)
+                text += get_text('template_string_count_percent_device',
+                                 format=True, d=d)
             else:
                 d = {
                     'dev': i[0] + 1,
@@ -348,9 +352,7 @@ def count_percent_device(device_k, id_company, viev=True):
                 }
                 l.append(d)
         u += i[1]
-    if viev:
-        return text
-    return l
+    return text if viev else l
 
 
 # #########################################
@@ -364,47 +366,64 @@ def app_build(id_company: int) -> Tuple[bool, str]:
 
 # #########################################
 
-def get_button(unique_number, d={}, format=False) -> str:
-    mode = BotDB.get(key='text_box1', where='name', meaning='program_mode_for_text', table='value_main')
+def get_button(unique_number, d=None, format=False) -> str:
+    if d is None:
+        d = {}
+    mode = BotDB.get(key='text_box1', where='name',
+                     meaning='program_mode_for_text', table='value_main')
     try:
-        text = BotDB.get(key='name', where='number', meaning=unique_number, table='button_name')
+        text = BotDB.get(key='name', where='number',
+                         meaning=unique_number, table='button_name')
     except:
         BotDB.add_new_button(unique_number)
-        text = BotDB.get(key='name', where='name', meaning=unique_number, table='button_name')
+        text = BotDB.get(key='name', where='name',
+                         meaning=unique_number, table='button_name')
     text_true = text.format(**d) if format else text
-    return f'({unique_number})\n\n' + text_true if mode == 'on' else text_true
+    return f'({unique_number})\n\n{text_true}' if mode == 'on' else text_true
 
 
-def get_text(unique_name, d={}, format=True) -> str:
-    mode = BotDB.get(key='text_box1', where='name', meaning='program_mode_for_text', table='value_main')
+def get_text(unique_name, d=None, format=True) -> str:
+    if d is None:
+        d = {}
+    mode = BotDB.get(key='text_box1', where='name',
+                     meaning='program_mode_for_text', table='value_main')
     try:
-        text = BotDB.get(key='text_box1', where='name', meaning=unique_name, table='texts')
+        text = BotDB.get(key='text_box1', where='name',
+                         meaning=unique_name, table='texts')
     except:
         BotDB.add_new_text(name=unique_name)
-        text = BotDB.get(key='text_box1', where='name', meaning=unique_name, table='texts')
+        text = BotDB.get(key='text_box1', where='name',
+                         meaning=unique_name, table='texts')
     text_true = text.format(**d) if format else text
-    return f'({unique_name})\n\n' + text_true if mode == 'on' else text_true
+    return f'({unique_name})\n\n{text_true}' if mode == 'on' else text_true
 
 
 def get_photo(unique_name) -> str:
     try:
-        photo = BotDB.get(key='photo_id', where='name', meaning=unique_name, table='photos')
+        photo = BotDB.get(key='photo_id', where='name',
+                          meaning=unique_name, table='photos')
     except:
-        photo = BotDB.get(key='photo_id', where='name', meaning='without_photo', table='photos')
+        photo = BotDB.get(key='photo_id', where='name',
+                          meaning='without_photo', table='photos')
     return photo
 
 
 # #########################################
 
-def create_2dot_data(table, key, where, meaning, d=[]):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
+def create_2dot_data(table, key, where, meaning, d=None):
+    if d is None:
+        d = []
+    get_data = BotDB.get(key=key, where=where,
+                         meaning=meaning, table=table).strip(',')
     s = ',' + ':'.join(list(map(lambda x: str(x), d)))
     adding = get_data + s
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=adding)
+    BotDB.updateT(key=key, where=where, meaning=meaning,
+                  table=table, text=adding)
 
 
 def parse_2dot_data(table, key, where, meaning) -> List[list]:
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
+    get_data = BotDB.get(key=key, where=where,
+                         meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     l1 = []
     l2 = []
@@ -420,7 +439,8 @@ def parse_2dot_data(table, key, where, meaning) -> List[list]:
 
 def get_2dot_data(table, key, where, meaning, where_data: str = 'id', get_data: str = 'id', meaning_data: str = '0'):
     try:
-        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        parse = parse_2dot_data(key=key, where=where,
+                                meaning=meaning, table=table)
         ind = parse[0].index(where_data)
         ind_get = parse[0].index(get_data)
     except Exception as e:
@@ -433,7 +453,8 @@ def get_2dot_data(table, key, where, meaning, where_data: str = 'id', get_data: 
 def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_data: str = 'id',
                   meaning_data: str = '0'):
     try:
-        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        parse = parse_2dot_data(key=key, where=where,
+                                meaning=meaning, table=table)
         ind = parse[0].index(where_data)
         ind_add = parse[0].index(add_data)
     except Exception as e:
@@ -441,23 +462,28 @@ def add_2dot_data(table, key, where, meaning, add, where_data: str = 'id', add_d
     s = ':'.join(parse[0])
     for i in parse[1:]:
         if str(i[ind]) == meaning_data:
-            i[ind_add] = round(i[ind_add] + add, 2) if isfloat(str(i[ind_add])) else i[ind_add] + add
+            i[ind_add] = round(
+                i[ind_add] + add, 2) if isfloat(str(i[ind_add])) else i[ind_add] + add
         s += ',' + ':'.join(list(map(lambda x: str(x), i)))
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
+    BotDB.updateT(key=key, where=where, meaning=meaning,
+                  table=table, text=s.strip(','))
 
 
 def delete_2dot_data(table, key, where, meaning, unique_value_data):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
+    get_data = BotDB.get(key=key, where=where,
+                         meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     headers = l[0]
     s = ''.join(f',{i}' for i in l[1:] if unique_value_data not in i)
     s = headers + s
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
+    BotDB.updateT(key=key, where=where, meaning=meaning,
+                  table=table, text=s.strip(','))
 
 
 def update_2dot_data(table, key, where, meaning, num, where_data='id', meaning_data='0', update_data='id'):
     try:
-        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
+        parse = parse_2dot_data(key=key, where=where,
+                                meaning=meaning, table=table)
         ind = parse[0].index(where_data)
         ind_update = parse[0].index(update_data)
     except Exception as e:
@@ -467,21 +493,24 @@ def update_2dot_data(table, key, where, meaning, num, where_data='id', meaning_d
         if str(i[ind]) == meaning_data:
             i[ind_update] = num
         s += ',' + ':'.join(list(map(lambda x: str(x), i)))
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=s.strip(','))
+    BotDB.updateT(key=key, where=where, meaning=meaning,
+                  table=table, text=s.strip(','))
 
 
 def add_header_2dot_data(table, key, where, meaning, name_new_header, ):
-    get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
+    get_data = BotDB.get(key=key, where=where,
+                         meaning=meaning, table=table).strip(',')
     l = get_data.split(',')
     l_new = [f'{l[0]}:{name_new_header}']
-    for i in l[1:]:
-        l_new.append(i + f':0')
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
+    l_new.extend(f'{i}:0' for i in l[1:])
+    BotDB.updateT(key=key, where=where, meaning=meaning,
+                  table=table, text=','.join(l_new))
 
 
 def delete_header_2dot_data(table, key, where, meaning, name_header):
     try:
-        get_data = BotDB.get(key=key, where=where, meaning=meaning, table=table).strip(',')
+        get_data = BotDB.get(key=key, where=where,
+                             meaning=meaning, table=table).strip(',')
         l: list = get_data.split(',')
         ind = l[0].split(':').index(name_header)
     except Exception as e:
@@ -497,7 +526,8 @@ def delete_header_2dot_data(table, key, where, meaning, name_header):
         i.pop(ind)
         _ = ':'.join(i)
         l_new.append(_)
-    BotDB.updateT(key=key, where=where, meaning=meaning, table=table, text=','.join(l_new))
+    BotDB.updateT(key=key, where=where, meaning=meaning,
+                  table=table, text=','.join(l_new))
 
 
 # #########################################
@@ -516,29 +546,39 @@ def last_tap(button='-', state=False):
                 try:
                     if message.from_user.username != BotDB.get(key='username', where='id_user',
                                                                meaning=message.from_user.id):
-                        BotDB.updateT(key='username', where='id_user', meaning=message.from_user.id,
-                                      text='@' + message.from_user.username)
+                        BotDB.updateT(key='username', where='id_user',
+                                      meaning=message.from_user.id, text=f'@{message.from_user.username}')
+
                     date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
-                    BotDB.updateT(key='last_tap', where='id_user', meaning=message.from_user.id, text=date)
-                    BotDB.add(key='count_tap', where='id_user', meaning=message.from_user.id, num=1)
+                    BotDB.updateT(key='last_tap', where='id_user',
+                                  meaning=message.from_user.id, text=date)
+                    BotDB.add(key='count_tap', where='id_user',
+                              meaning=message.from_user.id, num=1)
                 except:
                     pass
-                BotDB.add(table='click_button', key='amount_click', where='button', meaning=button, num=1)
+                BotDB.add(table='click_button', key='amount_click',
+                          where='button', meaning=button, num=1)
                 return await func(message, state)
+
         else:
             async def wrapper(message: types.Message):
                 try:
                     if message.from_user.username != BotDB.get(key='username', where='id_user',
                                                                meaning=message.from_user.id):
-                        BotDB.updateT(key='username', where='id_user', meaning=message.from_user.id,
-                                      text='@' + message.from_user.username)
+                        BotDB.updateT(key='username', where='id_user',
+                                      meaning=message.from_user.id, text=f'@{message.from_user.username}')
+
                     date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
-                    BotDB.updateT(key='last_tap', where='id_user', meaning=message.from_user.id, text=date)
-                    BotDB.add(key='count_tap', where='id_user', meaning=message.from_user.id, num=1)
+                    BotDB.updateT(key='last_tap', where='id_user',
+                                  meaning=message.from_user.id, text=date)
+                    BotDB.add(key='count_tap', where='id_user',
+                              meaning=message.from_user.id, num=1)
                 except:
                     pass
-                BotDB.add(table='click_button', key='amount_click', where='button', meaning=button, num=1)
+                BotDB.add(table='click_button', key='amount_click',
+                          where='button', meaning=button, num=1)
                 return await func(message)
+
         return wrapper
 
     return actual_dec
@@ -553,11 +593,14 @@ def last_tap_call(button='-', state=False):
                         BotDB.updateT(key='username', where='id_user', meaning=call.from_user.id,
                                       text='@' + call.from_user.username)
                     date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
-                    BotDB.updateT(key='last_tap', where='id_user', meaning=call.from_user.id, text=date)
-                    BotDB.add(key='count_tap', where='id_user', meaning=call.from_user.id, num=1)
+                    BotDB.updateT(key='last_tap', where='id_user',
+                                  meaning=call.from_user.id, text=date)
+                    BotDB.add(key='count_tap', where='id_user',
+                              meaning=call.from_user.id, num=1)
                 except:
                     pass
-                BotDB.add(table='click_button', key='amount_click', where='button', meaning=button, num=1)
+                BotDB.add(table='click_button', key='amount_click',
+                          where='button', meaning=button, num=1)
                 return await func(call, state)
         else:
             async def wrapper(call: CallbackQuery):
@@ -566,11 +609,14 @@ def last_tap_call(button='-', state=False):
                         BotDB.updateT(key='username', where='id_user', meaning=call.from_user.id,
                                       text='@' + call.from_user.username)
                     date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
-                    BotDB.updateT(key='last_tap', where='id_user', meaning=call.from_user.id, text=date)
-                    BotDB.add(key='count_tap', where='id_user', meaning=call.from_user.id, num=1)
+                    BotDB.updateT(key='last_tap', where='id_user',
+                                  meaning=call.from_user.id, text=date)
+                    BotDB.add(key='count_tap', where='id_user',
+                              meaning=call.from_user.id, num=1)
                 except:
                     pass
-                BotDB.add(table='click_button', key='amount_click', where='button', meaning=button, num=1)
+                BotDB.add(table='click_button', key='amount_click',
+                          where='button', meaning=button, num=1)
 
                 return await func(call)
         return wrapper
@@ -592,11 +638,9 @@ def clean_error_reg_company(id_user):
 
 def check_emptys(id_user):
     try:
-        answ = True if BotDB.get(key='nickname', where='id_user', meaning=id_user) == None or \
-                       BotDB.get(key='type_of_activity', where='id_user', meaning=id_user) == None or \
-                       BotDB.get(key='name_company', where='id_company', meaning=id_user,
-                                 table=BotDB.get(key='type_of_activity', where='id_user',
-                                                 meaning=id_user)) == None else False
+        answ = BotDB.get(key='nickname', where='id_user', meaning=id_user) is None or BotDB.get(key='type_of_activity', where='id_user', meaning=id_user) is None or BotDB.get(
+            key='name_company', where='id_company', meaning=id_user, table=BotDB.get(key='type_of_activity', where='id_user', meaning=id_user)) is None
+
     except:
         answ = True
     return answ
@@ -682,9 +726,11 @@ def ban_call(state=False):
         if state:
             async def wrapper(call: CallbackQuery, state: FSMContext):
                 if call.from_user.id in BotDB.get_all(key='id_user', table='black_list'):
-                    mes = BotDB.get(key='message_why', where='id_user', meaning=call.from_user.id, table='black_list')
+                    mes = BotDB.get(key='message_why', where='id_user',
+                                    meaning=call.from_user.id, table='black_list')
                     await bot.send_message(call.from_user.id,
-                                           get_text('ban_wrapper', format=True, d={'message_why': mes}),
+                                           get_text('ban_wrapper', format=True, d={
+                                                    'message_why': mes}),
                                            reply_markup=ReplyKeyboardRemove())
                     await Ban_User.Q1.set()
                 else:
@@ -692,9 +738,11 @@ def ban_call(state=False):
         else:
             async def wrapper(call: CallbackQuery):
                 if call.from_user.id in BotDB.get_all(key='id_user', table='black_list'):
-                    mes = BotDB.get(key='message_why', where='id_user', meaning=call.from_user.id, table='black_list')
+                    mes = BotDB.get(key='message_why', where='id_user',
+                                    meaning=call.from_user.id, table='black_list')
                     await bot.send_message(call.from_user.id,
-                                           get_text('ban_wrapper', format=True, d={'message_why': mes}),
+                                           get_text('ban_wrapper', format=True, d={
+                                                    'message_why': mes}),
                                            reply_markup=ReplyKeyboardRemove())
                     await Ban_User.Q1.set()
                 else:
@@ -705,22 +753,23 @@ def ban_call(state=False):
 
 # #########################################
 
+
 def tech_break(state=False):
     def actdec(func):
         if state:
             async def wrapper(message: types.Message, state: FSMContext):
                 if BotDB.get(key='text_box1', where='name', meaning='tech_break', table='value_main') == 'off' or \
-                message.from_user.id == 474701274:
+                        message.from_user.id == 474701274:
                     return await func(message, state)
                 await message.answer(get_text('tech_break', format=False), reply_markup=ReplyKeyboardRemove())
-                await Tech_Break.Q1.set() 
+                await Tech_Break.Q1.set()
         else:
             async def wrapper(message: types.Message):
                 if BotDB.get(key='text_box1', where='name', meaning='tech_break', table='value_main') == 'off' or \
-                message.from_user.id == 474701274:
+                        message.from_user.id == 474701274:
                     return await func(message)
                 await message.answer(get_text('tech_break', format=False), reply_markup=ReplyKeyboardRemove())
-                await Tech_Break.Q1.set() 
+                await Tech_Break.Q1.set()
         return wrapper
 
     return actdec
@@ -731,27 +780,26 @@ def tech_break_call(state=False):
         if state:
             async def wrapper(call: CallbackQuery, state: FSMContext):
                 if BotDB.get(key='text_box1', where='name', meaning='tech_break', table='value_main') == 'off' or \
-                call.from_user.id == 474701274:
+                        call.from_user.id == 474701274:
                     return await func(call, state)
                 await call.answer(get_text('tech_break', format=False), reply_markup=ReplyKeyboardRemove())
                 await Tech_Break.Q1.set()
         else:
             async def wrapper(call: CallbackQuery):
                 if BotDB.get(key='text_box1', where='name', meaning='tech_break', table='value_main') == 'off' or \
-                call.from_user.id == 474701274:
+                        call.from_user.id == 474701274:
                     return await func(call)
                 await call.answer(get_text('tech_break', format=False), reply_markup=ReplyKeyboardRemove())
-                await Tech_Break.Q1.set() 
+                await Tech_Break.Q1.set()
         return wrapper
 
     return actdec
 
 # #########################################
 
+
 def check_nickname(nickname):
-    if nickname in BotDB.get_all('nickname'):
-        return True
-    return False
+    return nickname in BotDB.get_all('nickname')
 
 
 def clean_nickname(nickname):
@@ -762,7 +810,8 @@ def clean_nickname(nickname):
 
 def check_on_simbols(nickname):
     try:
-        nickname1 = re.findall("[!\"#$%&'()*+,./\\\:;<=>?@[\]^`{|}~]", nickname)
+        nickname1 = re.findall(
+            "[!\"#$%&'()*+,./\\\:;<=>?@[\]^`{|}~]", nickname)
         nickname2 = re.findall('[^\x00-\x7Fа-яА-ЯёЁ]', nickname)
         return len(nickname1) + len(nickname2)
     except:
@@ -778,19 +827,19 @@ def check_name_company(name_company):
                  'fuel_production', 'oil_production']
     for i in all_table:
         s += BotDB.get_all('name_company', table=i)
-    if name_company in s:
-        return True
-    return False
+    return name_company in s
 
 
 # #########################################
 
 def i_have_stocks(id_user: int) -> bool:
     try:
-        parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=id_user)[1]
+        parse_2dot_data(table='users', key='briefcase',
+                        where='id_user', meaning=id_user)[1]
         return True
     except:
         return False
+
 
 def get_total_quantity_stocks(id_stocks: int) -> int:
     quantity_stocks_on_briefcase = 0
@@ -798,12 +847,13 @@ def get_total_quantity_stocks(id_stocks: int) -> int:
         if int(i) == id_stocks:
             continue
         try:
-            briefcase = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=int(i))[1]
+            briefcase = parse_2dot_data(
+                table='users', key='briefcase', where='id_user', meaning=int(i))[1]
             if briefcase[1] == id_stocks:
                 quantity_stocks_on_briefcase += briefcase[3]
         except:
             pass
-    
+
     quantity_stocks_for_sale = 0
     for i in BotDB.get_alls(keys='quantity_stocks, seller, id_stocks', table='stocks'):
         if i[2] != id_stocks:
@@ -811,10 +861,10 @@ def get_total_quantity_stocks(id_stocks: int) -> int:
         quantity_stocks_for_sale += i[0]
 
     total_stocks = quantity_stocks_on_briefcase + quantity_stocks_for_sale
-        
+
     return total_stocks
 
- 
+
 # def get_quantity_stocks_currently(id_stocks: int) -> int:
 #     quantity_stocks_have_users = 0
 #     for i in BotDB.get_all(key='id_user'):
@@ -840,13 +890,15 @@ def get_total_quantity_stocks(id_stocks: int) -> int:
 def get_price_one_stock(id_stocks: int) -> int:
     return BotDB.get(key='price_one_stock', where='id_stocks AND seller', meaning=id_stocks, table='stocks')
 
+
 def get_quantity_stocks_currently(id_stocks: int) -> int:
     return BotDB.get(key='quantity_stocks', where='id_stocks AND seller', meaning=id_stocks, table='stocks')
 
 
 def stocks_exist(id_company: int) -> bool:
-    try: 
-        int(BotDB.get(key='id_stocks', where='id_stocks', meaning=id_company, table='stocks'))
+    try:
+        int(BotDB.get(key='id_stocks', where='id_stocks',
+            meaning=id_company, table='stocks'))
         return True
     except:
         return False
@@ -854,9 +906,9 @@ def stocks_exist(id_company: int) -> bool:
 
 def get_your_stocks(id_user):
     t = ''
-    number_string = 1
-    parse = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=id_user)[1:]
-    for x in parse:
+    parse = parse_2dot_data(table='users', key='briefcase',
+                            where='id_user', meaning=id_user)[1:]
+    for number_string, x in enumerate(parse, start=1):
         d = {
             'id_slot': shell_num(x[0], signs=False),
             'number_string': number_string,
@@ -865,7 +917,6 @@ def get_your_stocks(id_user):
             'price_buy': shell_num(x[4])
         }
         t += get_text('template_string_my_stocks', format=True, d=d)
-        number_string += 1
     return t
 
 
@@ -873,40 +924,44 @@ def update_rating_stocks(id_slot):
     rating = 0
     for i in BotDB.get_all(key='id_user'):
         try:
-            parse = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=i)[1:]
+            parse = parse_2dot_data(
+                table='users', key='briefcase', where='id_user', meaning=i)[1:]
             for x in parse:
                 if id_slot in x:
                     rating += 1
         except Exception as e:
             pass
-    BotDB.updateN(key='rating', where='id_slot', meaning=id_slot, table='stocks', num=rating)
+    BotDB.updateN(key='rating', where='id_slot',
+                  meaning=id_slot, table='stocks', num=rating)
+
 
 def get_custom_number(num=0):
     tn = str(num)
-    numbers = BotDB.get(key='text_box1', where='name', meaning='custom_numbers', table='value_main').split(' ')
-    if len(tn) == 1:
-        return numbers[num]
-    return ''.join([numbers[int(i)] for i in tn])
+    numbers = BotDB.get(key='text_box1', where='name',
+                        meaning='custom_numbers', table='value_main').split(' ')
+    return numbers[num] if len(tn) == 1 else ''.join([numbers[int(i)] for i in tn])
 
 
 def list_stocks(page=1):
     t = ''
     data = [i for i in
-            BotDB.get_alls_with_order('id_slot, id_stocks, quantity_stocks, price_one_stock, percent_of_income, seller',
-                                    order='rating', table='stocks') if i[2] != 0 ]
-    count_string = BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
+            BotDB.get_alls_with_order('id_slot, id_stocks, quantity_stocks, price_one_stock, percent_of_income, seller, currency',
+                                      order='rating', table='stocks') if i[2] != 0]
+    count_string = BotDB.vCollector(
+        where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     for i in list(data):
+        curr = i[-1]
         quantity_stocks = i[2]
         percent = i[4] * 100
-        try:
-            signs = len(str(percent).strip('0').split('.')[1])
-        except:
-            signs = 10
-        type_of_a = BotDB.get(key='type_of_activity', where='id_user', meaning=i[1])
+        signs = Decimal(str(get_total_quantity_stocks(i[1]))).log10() // 1
+        signs = int(signs)
+        type_of_a = BotDB.get(key='type_of_activity',
+                              where='id_user', meaning=i[1])
         queue = get_custom_number(data.index(i)+1)
         if (len(data) / count_string) >= 1:
             if (page - 1) * count_string <= data.index(i) < page * count_string:
                 d = {
+                    'currency': curr,
                     'queue': queue,
                     'id_slot': shell_num(i[0], signs=False),
                     'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-1]),
@@ -919,6 +974,7 @@ def list_stocks(page=1):
                     'template_one_string_sell_stocks', format=True, d=d)
         else:
             d = {
+                'currency': curr,
                 'queue': queue,
                 'id_slot': shell_num(i[0], signs=False),
                 'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-1]),
@@ -934,9 +990,11 @@ def list_stocks(page=1):
 
 # #########################################
 
+
 def list_forbes():
     t = ''
-    l = [[income_dev_software(i[0]), i[0], i[1]] for i in BotDB.get_alls(keys='id_user, nickname')]
+    l = [[income_dev_software(i[0]), i[0], i[1]]
+         for i in BotDB.get_alls(keys='id_user, nickname')]
     l.sort(reverse=True)
     for i in l:
         if BotDB.vCollector(table='value_main', where='name', meaning='border_forbes') > i[0]:
@@ -953,20 +1011,18 @@ def list_forbes():
 
 def available(id_user: int, price_item: Union[int, float], currency: str = 'rub'):
     quantity_money = BotDB.get(key=currency, where='id_user', meaning=id_user)
-    quantity_available = quantity_money // price_item
-    return quantity_available
+    return quantity_money // price_item
 
 
 # #########################################
 
-def shell_num(num: Union[int, float], q_signs_after_comma: int = 2, signs: bool = True) -> str:
+def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
     if signs:
         num = round(num, q_signs_after_comma)
-        if isfloat(str(num)):
-            if float(num) % 1 != 0:
-                return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
+        if isfloat(str(num)) and float(num) % 1 != 0:
+            return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
         return '<code>{:,}</code>'.format(int(num))
-    return '<code>{}</code>'.format(num)
+    return f'<code>{num}</code>'
 
 
 def cleannum(numb: str) -> str:
@@ -974,7 +1030,8 @@ def cleannum(numb: str) -> str:
     numb = re.sub('[^\x00-\x7F]', '', numb)
     numb = re.sub('[а-яА-ЯёЁ]', '', numb)
     numb = re.sub('[A-Za-z]', '', numb)
-    clean_num = re.findall("^[-+]?[0-9]*[.,]?[0-9]+(?:[eE][-+]?[0-9]+)?$", numb)
+    clean_num = re.findall(
+        "^[-+]?[0-9]*[.,]?[0-9]+(?:[eE][-+]?[0-9]+)?$", numb)
     try:
         return clean_num[0]
     except:
@@ -982,7 +1039,7 @@ def cleannum(numb: str) -> str:
 
 
 def currency_calculation(money: Union[int, float], what_calculate: str = 'rub_in_usd', currency: str = 'rate_usd') -> \
-Tuple[float, float]:
+        Tuple[float, float]:
     '''Конвертирует валюты'''
     rate = BotDB.vCollector(table='value_main', where='name', meaning=currency)
     if what_calculate == 'rub_in_usd':
@@ -1013,7 +1070,8 @@ def isfloat(num: str) -> bool:
 
 def check_graf_rate(dimension):
     '''Проверяет кол-во записей курсов usd and btc в БД, если оно превышает установленую размерность, тогда самая старая запись удаляется'''
-    result_usd, result_btc = BotDB.get_all('id', 'graf_rate_usd'), BotDB.get_all('id', 'graf_rate_btc')
+    result_usd, result_btc = BotDB.get_all(
+        'id', 'graf_rate_usd'), BotDB.get_all('id', 'graf_rate_btc')
     if len(result_usd) > dimension:
         BotDB.delete('id', result_usd[0], 'graf_rate_usd')
     elif len(result_btc) > dimension:
@@ -1024,8 +1082,10 @@ def update_carrency_influence(random_percent_usd=0, random_percent_btc=0):
     sum_percent_decimal_usd = 0
     sum_percent_decimal_btc = 0
     users_id = BotDB.get_all(key='id_user')
-    rate_usd = BotDB.vCollector(table='value_main', where='name', meaning='rate_usd')
-    rate_btc = BotDB.vCollector(table='value_main', where='name', meaning='rate_btc')
+    rate_usd = BotDB.vCollector(
+        table='value_main', where='name', meaning='rate_usd')
+    rate_btc = BotDB.vCollector(
+        table='value_main', where='name', meaning='rate_btc')
     for i in users_id:
         for j in parse_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=i)[1:]:
             try:
@@ -1045,20 +1105,24 @@ def update_carrency_influence(random_percent_usd=0, random_percent_btc=0):
             add_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=i,
                           meaning_data=str(j[0]), add_data='min', add=-1)
 
-    usd = (1 + random_percent_usd + sum_percent_decimal_usd) * rate_usd  # просчитываем курс учитывая проценты
+    # просчитываем курс учитывая проценты
+    usd = (1 + random_percent_usd + sum_percent_decimal_usd) * rate_usd
     btc = (1 + random_percent_btc + sum_percent_decimal_btc) * rate_btc
     d = {'rate_usd': [usd, random_percent_usd + sum_percent_decimal_usd, rate_usd],
          'rate_btc': [btc, random_percent_btc + sum_percent_decimal_btc, rate_btc]}
     for i in d:
-        BotDB.updateN(table='value_main', key='main_num', where='name', meaning=i, num=round(d[i][0], 2))
+        BotDB.updateN(table='value_main', key='main_num',
+                      where='name', meaning=i, num=round(d[i][0], 2))
         tag = taG(len=12)
-        BotDB.updateT(key='text_box2', where='name', meaning=f'{i}_unique_id', text=tag, table='value_main')
+        BotDB.updateT(key='text_box2', where='name',
+                      meaning=f'{i}_unique_id', text=tag, table='value_main')
         sum_percent_decimal = d[i][1]
         rate = d[i][2]
 
         _ = i.split('_')[1]
 
-        type_rate_now_text = i + '_now'  # генерируем нужные нам текста для обращения в БД
+        # генерируем нужные нам текста для обращения в БД
+        type_rate_now_text = i + '_now'
         type_percent_text = 'perc_' + _
         type_graf_rate_text = 'graf_rate_' + _
 
@@ -1069,7 +1133,8 @@ def update_carrency_influence(random_percent_usd=0, random_percent_btc=0):
             f'INSERT INTO "{type_graf_rate_text}" (id, time_update, {i}, {type_percent_text}, {type_rate_now_text}) VALUES (?,?,?,?,?)',
             (tag, date, rate, percent_to_text, round(d[i][0], 2)))
         BotDB.conn.commit()
-    dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate')
+    dimension_graf_rate = BotDB.vCollector(
+        table='value_main', where='name', meaning='dimension_graf_rate')
     check_graf_rate(dimension_graf_rate)
 
 
@@ -1077,7 +1142,8 @@ def exchange_balans(id_user: int, count_money: Union[int, float], type_currency:
     dimension_graf_rate = BotDB.vCollector(table='value_main', where='name',
                                            meaning='dimension_graf_rate')  # размерность данных для графика
 
-    abs_money = abs(count_money)  # берем по модулю наши деньги
+    # берем по модулю наши деньги
+    abs_money = abs(count_money)
 
     ratio = BotDB.vCollector(wNum=get_weight(id_user, 'ratio_exchange'), table='value_main', where='name',
                              meaning=f'ratio_exchange')  # коеффициент скорости изменения курса
@@ -1092,7 +1158,8 @@ def exchange_balans(id_user: int, count_money: Union[int, float], type_currency:
                              d=[taG(), type_currency, 15, percent_decimal])  # записываем их в БД
             update_carrency_influence()
     else:
-        percent_decimal = round((abs_money / (sum(all_money_people) + abs_money)) / ratio, 6)
+        percent_decimal = round(
+            (abs_money / (sum(all_money_people) + abs_money)) / ratio, 6)
         if percent_decimal != 0:
             create_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=id_user,
                              d=[taG(), type_currency, 15, -percent_decimal])  # записываем их в БД
@@ -1100,7 +1167,8 @@ def exchange_balans(id_user: int, count_money: Union[int, float], type_currency:
 
 
 def rate_currency():
-    dimension_graf_rate = BotDB.vCollector(table='value_main', where='name', meaning='dimension_graf_rate')
+    dimension_graf_rate = BotDB.vCollector(
+        table='value_main', where='name', meaning='dimension_graf_rate')
 
     random_perc_usd = round(random.uniform(-1, 1), 2) / 100
     random_perc_btc = round(random.uniform(-1, 1), 2) / 100
@@ -1123,18 +1191,23 @@ def taG(len=10):
 # #########################################
 
 def emodziside(num):
-    plus = BotDB.get(key='text_box1', where='name', meaning='plus', table='value_main')
-    minus = BotDB.get(key='text_box1', where='name', meaning='minus', table='value_main')
+    plus = BotDB.get(key='text_box1', where='name',
+                     meaning='plus', table='value_main')
+    minus = BotDB.get(key='text_box1', where='name',
+                      meaning='minus', table='value_main')
     return plus if num > 0 else minus
 
 
 def get_text(unique_name, d={}, format=True) -> str:
-    mode = BotDB.get(key='text_box1', where='name', meaning='program_mode_for_text', table='value_main')
+    mode = BotDB.get(key='text_box1', where='name',
+                     meaning='program_mode_for_text', table='value_main')
     try:
-        text = BotDB.get(key='text_box1', where='name', meaning=unique_name, table='texts')
+        text = BotDB.get(key='text_box1', where='name',
+                         meaning=unique_name, table='texts')
     except:
         BotDB.add_new_text(name=unique_name)
-        text = BotDB.get(key='text_box1', where='name', meaning=unique_name, table='texts')
+        text = BotDB.get(key='text_box1', where='name',
+                         meaning=unique_name, table='texts')
     text_true = text.format(**d) if format else text
     return f'({unique_name})\n\n' + text_true if mode == 'on' else text_true
 
@@ -1155,11 +1228,13 @@ async def verify():
             # отправляем сообщение пользователю о том, что он прошел верефикацию успешно
             await bot.send_message(i[0], get_text('verify_ referral', format=False))
             # начисляем бонус за положительный статус верификации реффералу
-            BotDB.add(key='usd', where='id_user', meaning=i[0], num=award_referral)
-            # отправляем сообщение человеку, который сделал инвайт 
+            BotDB.add(key='usd', where='id_user',
+                      meaning=i[0], num=award_referral)
+            # отправляем сообщение человеку, который сделал инвайт
             await bot.send_message(i[1], get_text('verify_referrer', format=False))
             # начисляем бонус рефферу за положительный статус верификации у рефферала
-            BotDB.add(key='usd', where='id_user', meaning=i[1], num=award_referrer)
+            BotDB.add(key='usd', where='id_user',
+                      meaning=i[1], num=award_referrer)
 
 
 def income_dev_software(id_company: int) -> Union[int, float]:
@@ -1174,7 +1249,8 @@ def income_dev_software(id_company: int) -> Union[int, float]:
         for i in count_percent_device(device_k, id_company, viev=False):
             income_one_dev = BotDB.vCollector(wNum=get_weight(id_company, f'income_dev_{j}'), table='value_it',
                                               where='name', meaning=f'income_dev_{j}')
-            dev_income += ((1 + i['percent']) * income_one_dev) * i['quantity_same_percent'] if i['dev'] == j else 0
+            dev_income += ((1 + i['percent']) * income_one_dev) * \
+                i['quantity_same_percent'] if i['dev'] == j else 0
 
     income = app_income + dev_income + own_base_income
     return income
@@ -1183,7 +1259,8 @@ def income_dev_software(id_company: int) -> Union[int, float]:
 def salary_dev(id_company):
     total_salary = 0
     for i in range(1, 3 + 1):
-        q_devs = BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software')
+        q_devs = BotDB.get(
+            key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software')
         salary_dev = BotDB.vCollector(wNum=get_weight(id_company, f'salary_dev_{i}'), table='value_it', where='name',
                                       meaning=f'salary_dev_{i}')
         total_salary += q_devs * salary_dev

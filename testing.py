@@ -1,46 +1,73 @@
 
-from audioop import add
-from base64 import decode
-from copy import copy
-from ctypes import Union
-from curses.ascii import isascii, isdigit
-from pprint import pp, pprint
-from pydoc import text
-import string
-from typing import List, Union
-from unicodedata import decimal
+
+from fractions import Fraction
 import time
-import math
-import random
-import re
-import emoji
-import datetime
-from all_function import count_percent_device, create_mat_percents, exchange_balans, get_2dot_data, infinity_income_app, isfloat, one_pay_app, rent_office, shell_num, taG, update_carrency_influence
-import numpy as np
-from dispatcher import BotDB
-from collections import deque
-from classes import DevSoftware, User, Weight
+from decimal import *
 
-id_user = 474701274
+from all_function import isfloat, shell_num
 
-s = deque([])
-s.append('5')
-
+a = Decimal('0.1233')
+b = Decimal('1000000000')
+c = Decimal(0.1)/Decimal(0.1)
+# print(Decimal('1000000000').log10() // 1)
 
 def ttime(func):
-    def wrapper():
+    def wrapper(arg):
         t1 = time.time()
-        func()
+        func(arg)
         print(time.time() - t1)
     return wrapper
+
+def moneyfmt(value, places=2, curr='', sep=',', dp='.',
+             pos='', neg='-', trailneg=''):
+    q = Decimal(10) ** -places      # 2 places --> '0.01'
+    sign, digits, exp = value.quantize(q).as_tuple()
+    print(sign, digits)
+    result = []
+    digits = list(map(str, digits))
+    build, next = result.append, digits.pop
+    if sign:
+        build(trailneg)
+    for i in range(places):
+        build(next() if digits else '0')
+    if places:
+        build(dp)
+    if not digits:
+        build('0')
+    i = 0
+    while digits:
+        build(next())
+        i += 1
+        if i == 3 and digits:
+            i = 0
+            build(sep)
+    build(curr)
+    build(neg if sign else pos)
+    return ''.join(reversed(result)).strip('.00')
+
+def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
+    if signs:
+        num = round(num, q_signs_after_comma)
+        if isfloat(str(num)):
+            if float(num) % 1 != 0:
+                return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
+        return '<code>{:,}</code>'.format(int(num))
+    return '<code>{}</code>'.format(num)
+
+print(float(Fraction(12, 123456789)))
+
+
+
+# id_user = 474701274
+
+# s = deque([])
+# s.append('5')
+
+
 
 # user = DevSoftware(id_user)
 # print(user.get_quantity_device('2', 1))
 
-s='''
-Hello, how are you?
-I'm fine thank you
-'''
 # weight = Weight(id_user)
 # weight.add_weight('size_office_1', wRatio=10, wPlus=0)]\
 # print(BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_min') <= 91 <= BotDB.vCollector(table='value_main', where='name', meaning='percent_stocks_max'))
