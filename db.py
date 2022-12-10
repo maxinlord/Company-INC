@@ -49,8 +49,8 @@ class BotDB:
         self.cur.execute(f"INSERT INTO {table} (id_company, name_founder) VALUES (?,?)", (id_user, name))
         return self.conn.commit()
     
-    def add_stocks(self, id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income, currency):
-        self.cur.execute("INSERT INTO stocks (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income, currency) VALUES (?, ?, ?, ?, ?, ?, ?)", (id_slot, seller, id_stocks, quantity_stocks, price_one_stock, percent_of_income, currency))
+    def add_stocks(self, id_slot, seller, id_stocks, quantity_stocks, percent_of_income, currency):
+        self.cur.execute("INSERT INTO stocks (id_slot, seller, id_stocks, quantity_stocks, percent_of_income, currency) VALUES (?, ?, ?, ?, ?, ?)", (id_slot, seller, id_stocks, quantity_stocks, percent_of_income, currency))
 
         return self.conn.commit()
 

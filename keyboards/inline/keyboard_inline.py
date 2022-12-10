@@ -204,6 +204,22 @@ def create_stocks():
     ])
     return create_stocks
 
+def split_stocks():
+    split_stocks =  InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_button('i3.2.2'), callback_data=f'stocks:extend_quantity_stocks')
+        ]
+    ])
+    return split_stocks
+
+def confirm_extension():
+    confirm_extension =  InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_button('i3.2.3'), callback_data=f'stocks:confirm_extension')
+        ]
+    ])
+    return confirm_extension
+
 
 def back_forward_page_stocks(page):
     back_forward_page_stocks =  InlineKeyboardMarkup(inline_keyboard=[

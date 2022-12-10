@@ -4,7 +4,7 @@ from fractions import Fraction
 import time
 from decimal import *
 
-from all_function import isfloat, shell_num
+from all_function import isfloat, shell_num, update_price_stock
 
 a = Decimal('0.1233')
 b = Decimal('1000000000')
@@ -18,9 +18,8 @@ def ttime(func):
         print(time.time() - t1)
     return wrapper
 
-def moneyfmt(value, places=2, curr='', sep=',', dp='.',
-             pos='', neg='-', trailneg=''):
-    q = Decimal(10) ** -places      # 2 places --> '0.01'
+def moneyfmt(value, places=2, curr='', sep=',', dp='.', pos='', neg='-', trailneg=''):
+    q = Decimal(10) ** -places 
     sign, digits, exp = value.quantize(q).as_tuple()
     print(sign, digits)
     result = []
@@ -48,13 +47,13 @@ def moneyfmt(value, places=2, curr='', sep=',', dp='.',
 def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
     if signs:
         num = round(num, q_signs_after_comma)
-        if isfloat(str(num)):
-            if float(num) % 1 != 0:
-                return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
+        if isfloat(str(num)) and float(num) % 1 != 0:
+            return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
         return '<code>{:,}</code>'.format(int(num))
-    return '<code>{}</code>'.format(num)
+    return f'<code>{num}</code>'
 
 print(float(Fraction(12, 123456789)))
+
 
 
 

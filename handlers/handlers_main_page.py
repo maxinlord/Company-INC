@@ -389,10 +389,50 @@ async def my_stocks(message: Message):
             'total_stocks': shell_num(all:= get_total_quantity_stocks(user.id)),
             'quantity_stocks_currently': shell_num(curr:= get_quantity_stocks_currently(user.id)),
             'price_one_stock': shell_num(get_price_one_stock(user.id)),
-            'bought_stocks': shell_num(all - curr)
+            'bought_stocks': shell_num(all - curr),
+            'total_income_from_stocks': shell_num(user.total_income_from_stocks),
+            'curr': get_curr_stock(user.id)
             }
-        return await message.answer(get_text('my_stocks', format=True, d=d))
+        return await message.answer(get_text('my_stocks', format=True, d=d), reply_markup=keyboard_inline.split_stocks())
     await message.answer(get_text('create_stocks', format=False), reply_markup=keyboard_inline.create_stocks())
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'extend_quantity_stocks' and call.data.split(':')[0] == 'stocks')
+@tech_break_call()
+@ban_call()
+@error_reg_call()
+@last_tap_call('-')
+async def extend_quantity_stocks1(call: CallbackQuery):
+    await bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=None)
+    await bot.send_message(call.from_user.id, get_text('extend_quantity_stocks1.1', format=False), reply_markup=keyboard_default.cancel())
+    await extend_quantity_stocks.Q1.set()
+
+@dp.message_handler(state=extend_quantity_stocks.Q1)
+@last_tap('-', state=True)
+async def extend_quantity_stocks2(message: Message, state: FSMContext):
+    if message.text == get_button('*2'):
+        await message.answer(get_text('menu_stocks', format=False), reply_markup=keyboard_default.menu_stocks())
+        await my_stocks(message=message)
+        await state.finish()
+    elif cleannum(message.text).isdigit() or isfloat(cleannum(message.text)):
+        num = int(cleannum(message.text))
+        if isfloat(str(num)):
+            return await message.answer()
+        if (BotDB.vCollector(table='value_main', where='name', meaning='count_stocks_min') > num) | (num > BotDB.vCollector(table='value_main', where='name', meaning='count_stocks_max')):
+            return await message.answer(get_text('extend_quantity_stocks2.condition', format=False)) 
+        async with state.proxy() as data:
+                data['quantity_stocks'] = num
+        await message.answer(get_text('extend_quantity_stocks2.1', format=False), reply_markup=keyboard_inline.confirm_extension())
+    else:
+        return await message.answer()
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'confirm_extension' and call.data.split(':')[0] == 'stocks', state=extend_quantity_stocks.Q1)
+@last_tap_call('-', state=True)
+async def extend_quantity_stocks3(call: CallbackQuery, state: FSMContext):
+    await bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=None)
+    await bot.send_message(call.from_user.id, get_text('extend_quantity_stocks3.1', format=False), reply_markup=keyboard_default.menu_stocks())
+    await state.finish()
+
+
 
 @dp.callback_query_handler(lambda call: call.data.split(':')[1] == 'create_stocks' and call.data.split(':')[0] == 'stocks')
 @tech_break_call()
@@ -428,11 +468,11 @@ async def create_stocks9(message: Message, state: FSMContext):
     if message.text == get_button('*2'):
         await message.answer(get_text('menu_stocks'), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
-    elif message.text == get_button('3.1.1') or message.text == get_button('3.1.2'):
+    elif message.text in [get_button('3.1.1'), get_button('3.1.2')]:
         curr = 'rub' if message.text == get_button('3.1.1') else 'usd'
         async with state.proxy() as data:
                 data['currency'] = curr
-        await message.answer(get_text('create_stocks2.1', format=False))
+        await message.answer(get_text('create_stocks2.1', format=False), reply_markup=ReplyKeyboardRemove())
         await stocks.Q2.set()
     else:
         await message.answer(get_text('create_stocks9.3', format=False))
@@ -464,14 +504,18 @@ async def create_stocks4(message: Message, state: FSMContext):
         await state.finish()
     elif cleannum(message.text).isdigit() or isfloat(cleannum(message.text)):
         num = round(float(cleannum(message.text)), 2)
-        if num < BotDB.vCollector(where='name', meaning=f'min_price_stocks', table='value_main'):
+        if num < BotDB.vCollector(where='name', meaning='min_price_stocks', table='value_main'):
             return await message.answer(get_text('create_stocks4.condition', format=False))
+        
         data = await state.get_data()
         currency = data.get('currency')
         percent_of_income = data.get('percent_of_income')
         quantity_stocks = data.get('quantity_stocks')
         percent_for_one_stock = Decimal(str(percent_of_income)) / Decimal(str(quantity_stocks))
-        BotDB.add_stocks(id_slot=taG(), id_stocks=user.id, percent_of_income=float(percent_for_one_stock), quantity_stocks=quantity_stocks, price_one_stock=num, seller=user.id, currency=currency)
+        tag = taG()
+        BotDB.add_stocks(id_slot=tag, id_stocks=user.id, percent_of_income=float(percent_for_one_stock), quantity_stocks=quantity_stocks, seller=user.id, currency=currency)
+        d = [get_date_now(h=False, m=False, s=False), num]
+        create_2dot_data(table='stocks', key='price_one_stock', where='id_slot', meaning=tag, d = d)
         await message.answer(get_text('create_stocks4.1', format=False), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
     else:
@@ -486,7 +530,7 @@ async def create_stocks4(message: Message, state: FSMContext):
 @last_tap('-')
 async def stock_market(message: Message):
     data = BotDB.get_all('quantity_stocks', table='stocks')
-    if data == []:
+    if sum(data) == 0 or data == []:
         return await message.answer(get_text('do_not_exist_offers'))
     count_page = len([i for i in data if i != 0]) / BotDB.vCollector(where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     d = {
@@ -548,7 +592,7 @@ async def back_page_stocks(call: CallbackQuery):
 @error_reg_call()
 @last_tap_call('-')
 async def buy_stocks1(call: CallbackQuery):
-    await bot.edit_message_reply_markup(chat_id=call.from_user.id,message_id=call.message.message_id)
+    await bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.message_id)
     await bot.send_message(call.from_user.id, get_text('buy_stocks1.1', format=False), reply_markup=keyboard_default.cancel())
     await stocks.Q4.set()
 
@@ -569,9 +613,11 @@ async def buy_stocks2(message: Message, state: FSMContext):
             return await message.answer(get_text('buy_stocks2.condition', format=False))
             
         async with state.proxy() as data:
+            data['seller'] = seller
             data['id_slot'] = id_slot
-            data['price_one_stock'] = BotDB.get(key='price_one_stock', where='id_slot', meaning=id_slot, table='stocks')
+            data['price_one_stock'] = parse_2dot_data(key='price_one_stock', where='id_slot', meaning=id_slot, table='stocks')[-1][-1]
             data['id_stocks'] = BotDB.get(key='id_stocks', where='id_slot', meaning=id_slot, table='stocks')
+            data['currency'] = BotDB.get(key='currency', where='id_slot', meaning=id_slot, table='stocks')
         await message.answer(get_text('buy_stocks2.1', format=False))
         await stocks.Q5.set()
 
@@ -586,34 +632,43 @@ async def buy_stocks3(message: Message, state: FSMContext):
         num = int(cleannum(message.text))
         data = await state.get_data()
         id_slot: str = data.get('id_slot')
+        seller = data.get('seller')
+        curr = data.get('currency')
         price_one_stock = data.get('price_one_stock')
         id_stocks = data.get('id_stocks')
 
-        if num * price_one_stock > user.usd:
+        curr_money = user.rub if curr == 'rub' else user.usd
+
+        if num * price_one_stock > curr_money:
             return await message.answer(get_text('buy_stocks3.condition1', format=False))
-            
+
         if BotDB.get(key='quantity_stocks', where='id_slot', meaning=id_slot, table='stocks') - num < 0:
             return await message.answer(get_text('buy_stocks3.condition2', format=False))
 
         pay = round(num * price_one_stock, 2)
-        BotDB.add(key='usd', where='id_user', meaning=user.id, num=-pay)
+        BotDB.add(key=curr, where='id_user', meaning=user.id, num=-pay)
 
         BotDB.add(key='quantity_stocks', where='id_slot', meaning=id_slot, table='stocks', num=-num)
         user2 = User(id_stocks)
 
-        id_slot_stocks_old = True in list(map(lambda x: True if id_slot in x else False, parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id)))
+        id_slot_stocks_old = True in list(map(lambda x: id_slot in x, parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id)))
+
 
         if id_slot_stocks_old:
             add_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, where_data='id_stocks', meaning_data=str(id_stocks), add_data='quantity_stocks', add=num)
         else:
-            d = [str(id_slot), str(id_stocks), str(user2.company_name), str(num), str(price_one_stock)]
+            d = [id_slot, str(id_stocks), str(user2.company_name), str(num), str(price_one_stock), curr]
+
             create_2dot_data(table='users', key='briefcase', where='id_user', meaning=user.id, d = d)
-        
+
+        if seller == id_stocks:
+            BotDB.add(key='total_income_from_stocks', where='id_user', meaning=user2.id, num=pay)
+
         update_rating_stocks(id_slot)
 
         await message.answer(get_text('buy_stocks3.1', format=False), reply_markup=keyboard_default.menu_stocks())
         await state.finish()
-          
+
     else:
         await message.answer(get_text('buy_stocks3.4', format=False))
 

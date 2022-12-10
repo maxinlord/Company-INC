@@ -5,7 +5,7 @@ import aioschedule
 from aiogram import executor
 
 from all_function import (check_apps_done, income_dev_software, rate_currency, rent_office,
-                          salary_dev, verify)
+                          salary_dev, update_price_stock, verify)
 from dispatcher import BotDB, dp
 from handlers import *
 
@@ -46,6 +46,7 @@ async def scheduler():
     aioschedule.every().day.at('18:00').do(job_bonus)
     aioschedule.every().day.at('00:00').do(job_bonus)
     aioschedule.every().day.at('06:00').do(job_bonus)
+    aioschedule.every().day.at('06:00').do(update_price_stock)
     aioschedule.every().day.at('12:00').do(job_bonus)
     aioschedule.every().day.at('19:00').do(job_take_rent)
     aioschedule.every(1).seconds.do(job_minute)

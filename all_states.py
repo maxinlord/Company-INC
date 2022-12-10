@@ -34,6 +34,12 @@ class stocks(StatesGroup):
     Q8 = State()
     Q9 = State()
 
+class extend_quantity_stocks(StatesGroup):
+    Q1 = State()
+    Q2 = State()
+    Q3 = State()
+
+
 class Change_Nickname(StatesGroup):
     Q1 = State()
     Q2 = State()

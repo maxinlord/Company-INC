@@ -77,6 +77,10 @@ class User:
     def company_name(self):
         return self.BotDB.get(key='name_company', where='id_company', meaning=self.id, table=self.type_of_activity)
 
+    @property
+    def total_income_from_stocks(self):
+        return self.BotDB.get(key='total_income_from_stocks', where='id_user', meaning=self.id)
+
 
 class DevSoftware:
 

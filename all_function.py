@@ -24,6 +24,21 @@ def check_name_app(name_app):
 
 # #########################################
 
+def get_date_now(ymd=True, h=True, m=True, s=True, sep1=':', sep2='/'):
+    result = ''
+    if h:
+        result += '%H:'
+    if m:
+        result += '%M:'
+    if s:
+        result += '%S'
+    result = result.strip(':').replace(':', sep1)
+    if ymd:
+        result += ' %m/%d/%Y'.replace('/', sep2)
+    return str(datetime.datetime.now().strftime(result.strip(' ')))
+
+# #########################################
+
 def get_weight(id_user, name_weight):
     ratio = get_2dot_data(table='weights', key='user_weights', where='id_user', meaning=id_user,
                           where_data='name_weight', meaning_data=name_weight, get_data='wRatio')
@@ -590,8 +605,8 @@ def last_tap_call(button='-', state=False):
             async def wrapper(call: CallbackQuery, state: FSMContext):
                 try:
                     if call.from_user.username != BotDB.get(key='username', where='id_user', meaning=call.from_user.id):
-                        BotDB.updateT(key='username', where='id_user', meaning=call.from_user.id,
-                                      text='@' + call.from_user.username)
+                        BotDB.updateT(key='username', where='id_user', meaning=call.from_user.id, text=f'@{call.from_user.username}')
+
                     date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
                     BotDB.updateT(key='last_tap', where='id_user',
                                   meaning=call.from_user.id, text=date)
@@ -602,12 +617,13 @@ def last_tap_call(button='-', state=False):
                 BotDB.add(table='click_button', key='amount_click',
                           where='button', meaning=button, num=1)
                 return await func(call, state)
+
         else:
             async def wrapper(call: CallbackQuery):
                 try:
                     if call.from_user.username != BotDB.get(key='username', where='id_user', meaning=call.from_user.id):
-                        BotDB.updateT(key='username', where='id_user', meaning=call.from_user.id,
-                                      text='@' + call.from_user.username)
+                        BotDB.updateT(key='username', where='id_user', meaning=call.from_user.id, text=f'@{call.from_user.username}')
+
                     date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
                     BotDB.updateT(key='last_tap', where='id_user',
                                   meaning=call.from_user.id, text=date)
@@ -619,6 +635,7 @@ def last_tap_call(button='-', state=False):
                           where='button', meaning=button, num=1)
 
                 return await func(call)
+
         return wrapper
 
     return actual_dec
@@ -854,11 +871,7 @@ def get_total_quantity_stocks(id_stocks: int) -> int:
         except:
             pass
 
-    quantity_stocks_for_sale = 0
-    for i in BotDB.get_alls(keys='quantity_stocks, seller, id_stocks', table='stocks'):
-        if i[2] != id_stocks:
-            continue
-        quantity_stocks_for_sale += i[0]
+    quantity_stocks_for_sale = sum(i[0] for i in BotDB.get_alls(keys='quantity_stocks, seller, id_stocks', table='stocks') if i[2] == id_stocks)
 
     total_stocks = quantity_stocks_on_briefcase + quantity_stocks_for_sale
 
@@ -887,9 +900,47 @@ def get_total_quantity_stocks(id_stocks: int) -> int:
 #     current_stocks = quantity_all_stocks - quantity_stocks_have_users - quantity_stocks_for_sale
 #     return current_stocks
 
-def get_price_one_stock(id_stocks: int) -> int:
-    return BotDB.get(key='price_one_stock', where='id_stocks AND seller', meaning=id_stocks, table='stocks')
+def update_price_stock():
+    base_percent_stock = BotDB.vCollector(where='name', meaning='base_percent_stock', table='value_main')
+    base_up_percent_stock = BotDB.vCollector(where='name', meaning='base_up_percent_stock', table='value_main')
+    border_percent_up_stock = BotDB.vCollector(where='name', meaning='border_percent_up_stock', table='value_main')
+    for i in BotDB.get_all(key='id_user'):
+        try:
+            parse_2dot_data(table='stocks', key='price_one_stock', where='id_stocks AND seller', meaning=i)[-1][-1]
+        except:
+            continue
+        try:
+            x = parse_2dot_data(table='users', key='history_income', where='id_user', meaning=i)[1]
+        except:
+            income_now = income_dev_software(i)
+            d = [get_date_now(h=False, m=False, s=False), income_now]
+            create_2dot_data(table='users', key='history_income', where='id_user', meaning=i, d=d)
+            continue
+        x1 = income_dev_software(i)
+        x2 = parse_2dot_data(table='users', key='history_income', where='id_user', meaning=i)[-1]
+        up_perc = (x1 * 100) / x2[-1] - 100
+        if (up_perc/100) > border_percent_up_stock:
+            base_percent_stock += base_up_percent_stock
+            x_ = x2[-1] * (1 + border_percent_up_stock)
+            up_perc_plus = (x1) / x_ - 1
+            base_percent_stock += up_perc_plus
+        
+        old_price_stock = parse_2dot_data(table='stocks', key='price_one_stock', where='id_stocks AND seller', meaning=i)[-1][-1]
+        new_price_stock = old_price_stock * (1 + base_percent_stock)
 
+        date_now = get_date_now(h=False, m=False, s=False)
+        d = [date_now, round(new_price_stock, 2)]
+        create_2dot_data(table='stocks', key='price_one_stock', where='id_stocks AND seller', meaning=i, d=d)
+        d = [date_now, x1]
+        create_2dot_data(table='users', key='history_income', where='id_user', meaning=i, d=d)
+
+
+def get_price_one_stock(id_stocks: int) -> int:
+    return parse_2dot_data(key='price_one_stock', where='id_stocks AND seller', meaning=id_stocks, table='stocks')[-1][-1]
+
+def get_curr_stock(id_stocks: int) -> int:
+    _ = BotDB.get(key='currency', where='id_stocks AND seller', meaning=id_stocks, table='stocks')
+    return '₽' if _ == 'rub' else '$'
 
 def get_quantity_stocks_currently(id_stocks: int) -> int:
     return BotDB.get(key='quantity_stocks', where='id_stocks AND seller', meaning=id_stocks, table='stocks')
@@ -914,7 +965,8 @@ def get_your_stocks(id_user):
             'number_string': number_string,
             'name_company': x[2],
             'quantity_stocks': shell_num(x[3]),
-            'price_buy': shell_num(x[4])
+            'price_buy': shell_num(x[4]),
+            'curr': '₽' if x[-1] == 'rub' else '$'
         }
         t += get_text('template_string_my_stocks', format=True, d=d)
     return t
@@ -934,6 +986,7 @@ def update_rating_stocks(id_slot):
     BotDB.updateN(key='rating', where='id_slot',
                   meaning=id_slot, table='stocks', num=rating)
 
+def update_rating_stocks(id_slot):j
 
 def get_custom_number(num=0):
     tn = str(num)
@@ -950,9 +1003,10 @@ def list_stocks(page=1):
     count_string = BotDB.vCollector(
         where='name', meaning='count_string_in_one_page_stocks', table='value_main')
     for i in list(data):
-        curr = i[-1]
+        curr = '₽' if i[-1] == 'rub' else '$'
         quantity_stocks = i[2]
         percent = i[4] * 100
+        price_one_stock = parse_2dot_data(table='stocks', key='price_one_stock', where='id_slot', meaning=i[0])[-1][-1]
         signs = Decimal(str(get_total_quantity_stocks(i[1]))).log10() // 1
         signs = int(signs)
         type_of_a = BotDB.get(key='type_of_activity',
@@ -964,26 +1018,26 @@ def list_stocks(page=1):
                     'currency': curr,
                     'queue': queue,
                     'id_slot': shell_num(i[0], signs=False),
-                    'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-1]),
+                    'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-2]),
                     'quantity_stocks': shell_num(quantity_stocks),
-                    'price_one_stock': shell_num(i[3]),
+                    'price_one_stock': shell_num(price_one_stock),
                     'percent': shell_num(percent, q_signs_after_comma=signs),
                     'name_company': BotDB.get(key='name_company', where='id_company', meaning=i[1], table=type_of_a)
                 }
-                t += get_text('template_one_string_stocks', format=True, d=d) if i[-1] == i[1] else get_text(
+                t += get_text('template_one_string_stocks', format=True, d=d) if i[-2] == i[1] else get_text(
                     'template_one_string_sell_stocks', format=True, d=d)
         else:
             d = {
                 'currency': curr,
                 'queue': queue,
                 'id_slot': shell_num(i[0], signs=False),
-                'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-1]),
+                'name_seller': BotDB.get(key='nickname', where='id_user', meaning=i[-2]),
                 'quantity_stocks': shell_num(quantity_stocks),
-                'price_one_stock': shell_num(i[3]),
+                'price_one_stock': shell_num(price_one_stock),
                 'percent': shell_num(percent, q_signs_after_comma=signs),
                 'name_company': BotDB.get(key='name_company', where='id_company', meaning=i[1], table=type_of_a)
             }
-            t += get_text('template_one_string_stocks', format=True, d=d) if i[-1] == i[1] else get_text(
+            t += get_text('template_one_string_stocks', format=True, d=d) if i[-2] == i[1] else get_text(
                 'template_one_string_sell_stocks', format=True, d=d)
 
     return t.strip('\n')
@@ -1038,17 +1092,14 @@ def cleannum(numb: str) -> str:
         return ' '
 
 
-def currency_calculation(money: Union[int, float], what_calculate: str = 'rub_in_usd', currency: str = 'rate_usd') -> \
-        Tuple[float, float]:
+def currency_calculation(money: Union[int, float], what_calculate: str = 'rub_in_usd', currency: str = 'rate_usd') -> Tuple[float, float]:
     '''Конвертирует валюты'''
     rate = BotDB.vCollector(table='value_main', where='name', meaning=currency)
     if what_calculate == 'rub_in_usd':
         result = round(money / rate, 2)
     elif what_calculate == 'usd_in_btc':
         result = round(money / rate, 5)
-    elif what_calculate == 'usd_in_rub':
-        result = round(money * rate, 2)
-    elif what_calculate == 'btc_in_usd':
+    elif what_calculate in {'usd_in_rub', 'btc_in_usd'}:
         result = round(money * rate, 2)
     return result, rate
 
@@ -1058,12 +1109,11 @@ def currency_calculation(money: Union[int, float], what_calculate: str = 'rub_in
 def isfloat(num: str) -> bool:
     if num.isdigit():
         return False
-    else:
-        try:
-            float(num)
-            return True
-        except:
-            return False
+    try:
+        float(num)
+        return True
+    except:
+        return False
 
 
 # #########################################
@@ -1122,9 +1172,9 @@ def update_carrency_influence(random_percent_usd=0, random_percent_btc=0):
         _ = i.split('_')[1]
 
         # генерируем нужные нам текста для обращения в БД
-        type_rate_now_text = i + '_now'
-        type_percent_text = 'perc_' + _
-        type_graf_rate_text = 'graf_rate_' + _
+        type_rate_now_text = f'{i}_now'
+        type_percent_text = f'perc_{_}'
+        type_graf_rate_text = f'graf_rate_{_}'
 
         date = time.strftime('%X') + time.strftime(' %m/%d/%Y')
         percent_to_text = f"{sum_percent_decimal * 100}"
@@ -1150,17 +1200,13 @@ def exchange_balans(id_user: int, count_money: Union[int, float], type_currency:
     all_money_people = BotDB.get_all(
         type_currency.split('_')[1])  # получаем все имеющиеся деньги указоного типа от всех юзеров
 
-    if count_money > 0:
-        percent_decimal = round((abs_money / (sum(all_money_people) + abs_money)) / ratio,
-                                6)  # получаем десятичный процент, формула = наши_деньги / деньги_всех + наши_деньги / коеффициент скорости изменения курса
-        if percent_decimal != 0:
+    percent_decimal = round((abs_money / (sum(all_money_people) + abs_money)) / ratio, 6)  # получаем десятичный процент, формула = наши_деньги / деньги_всех + наши_деньги / коеффициент скорости изменения курса
+    if percent_decimal != 0:
+        if count_money > 0:
             create_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=id_user,
                              d=[taG(), type_currency, 15, percent_decimal])  # записываем их в БД
             update_carrency_influence()
-    else:
-        percent_decimal = round(
-            (abs_money / (sum(all_money_people) + abs_money)) / ratio, 6)
-        if percent_decimal != 0:
+        else:
             create_2dot_data(table='users', key='average_percent_influences', where='id_user', meaning=id_user,
                              d=[taG(), type_currency, 15, -percent_decimal])  # записываем их в БД
     check_graf_rate(dimension_graf_rate)
@@ -1182,7 +1228,7 @@ def rate_currency():
 def taG(len=10):
     tagg = ''
     all = string.digits + string.ascii_letters
-    for i in range(0, len):
+    for _ in range(len):
         a = random.choice(all)
         tagg += a
     return tagg
@@ -1198,7 +1244,9 @@ def emodziside(num):
     return plus if num > 0 else minus
 
 
-def get_text(unique_name, d={}, format=True) -> str:
+def get_text(unique_name, d=None, format=True) -> str:
+    if d is None:
+        d = {}
     mode = BotDB.get(key='text_box1', where='name',
                      meaning='program_mode_for_text', table='value_main')
     try:
@@ -1209,15 +1257,14 @@ def get_text(unique_name, d={}, format=True) -> str:
         text = BotDB.get(key='text_box1', where='name',
                          meaning=unique_name, table='texts')
     text_true = text.format(**d) if format else text
-    return f'({unique_name})\n\n' + text_true if mode == 'on' else text_true
+    return f'({unique_name})\n\n{text_true}' if mode == 'on' else text_true
 
 
 async def verify():
     data = BotDB.get_alls('id_user, referrer, count_tap, date_reg, verify')
     for i in data:
-        verife_date = datetime.datetime.today() > datetime.datetime.strptime(i[3],
-                                                                             '%H:%M:%S %m/%d/%Y') + datetime.timedelta(
-            days=3)
+        verife_date = datetime.datetime.now() > datetime.datetime.strptime(i[3], '%H:%M:%S %m/%d/%Y') + datetime.timedelta(days=3)
+
         if i[1] != 0 and i[2] >= 50 and verife_date and i[4] == 0:
             award_referral = BotDB.vCollector(wNum=get_weight(i[0], 'award_referral'), table='value_main', where='name',
                                               meaning='award_referral')
