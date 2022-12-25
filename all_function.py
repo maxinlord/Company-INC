@@ -454,14 +454,13 @@ def parse_2dot_data(table, key, where, meaning) -> List[list]:
 
 def get_2dot_data(table, key, where, meaning, where_data: str = 'id', get_data: str = 'id', meaning_data: str = '0'):
     try:
-        parse = parse_2dot_data(key=key, where=where,
-                                meaning=meaning, table=table)
+        parse = parse_2dot_data(key=key, where=where, meaning=meaning, table=table)
         ind = parse[0].index(where_data)
         ind_get = parse[0].index(get_data)
     except Exception as e:
         return
     for i in parse[1:]:
-        if str(i[ind]) == str(meaning_data):
+        if str(i[ind]) == meaning_data:
             return i[ind_get]
 
 
@@ -859,15 +858,18 @@ def i_have_stocks(id_user: int) -> bool:
 
 
 def get_total_quantity_stocks(id_stocks: int) -> int:
+    '''
+    Получает всё выпущенное кол-во акций у компании 
+    '''
     quantity_stocks_on_briefcase = 0
     for i in BotDB.get_all(key='id_user'):
         if int(i) == id_stocks:
             continue
-        try:
-            briefcase = parse_2dot_data(
-                table='users', key='briefcase', where='id_user', meaning=int(i))[1]
-            if briefcase[1] == id_stocks:
-                quantity_stocks_on_briefcase += briefcase[3]
+        try:                
+            briefcase = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=int(i))
+            for x in range(len(briefcase)):
+                if briefcase[x][1] == id_stocks:
+                    quantity_stocks_on_briefcase += briefcase[x][3]
         except:
             pass
 
@@ -877,7 +879,17 @@ def get_total_quantity_stocks(id_stocks: int) -> int:
 
     return total_stocks
 
+def enable_split(id_user):
+    return bool(BotDB.get(key='quantity_split', where='id_user', meaning=id_user))
 
+def poll_status_extend_stocks(id_user):
+    try:
+        i = parse_2dot_data(table='users', key='info_for_extend_stocks', where='id_user', meaning=id_user)
+        _ = i[1]
+        _ = i[-1]
+    except:
+        return False
+    return bool(_[-1])
 # def get_quantity_stocks_currently(id_stocks: int) -> int:
 #     quantity_stocks_have_users = 0
 #     for i in BotDB.get_all(key='id_user'):
@@ -954,6 +966,24 @@ def stocks_exist(id_company: int) -> bool:
     except:
         return False
 
+def get_all_stocksholder(id_stocks: int):
+    set_stocksholder = set()
+    for i in BotDB.get_all(key='id_user'):
+        if int(i) == id_stocks:
+            continue
+        try:
+            briefcase = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=int(i))
+            for x in range(len(briefcase)):
+                if briefcase[x][1] == id_stocks:
+                    set_stocksholder.add(i)
+        except:
+            pass
+    # for i in BotDB.get_alls(keys='seller, id_stocks', table='stocks'):
+    #     if i[1] == id_stocks and i[0] != id_stocks:
+    #         set_stocksholder.add(i[0])
+    
+    return list(set_stocksholder)
+
 
 def get_your_stocks(id_user):
     t = ''
@@ -966,11 +996,19 @@ def get_your_stocks(id_user):
             'name_company': x[2],
             'quantity_stocks': shell_num(x[3]),
             'price_buy': shell_num(x[4]),
-            'curr': '₽' if x[-1] == 'rub' else '$'
+            'curr': '₽' if x[-2] == 'rub' else '$',
+            'relative_perc': x[-1]
         }
         t += get_text('template_string_my_stocks', format=True, d=d)
     return t
 
+
+def update_relative_perc_users(id_stocks) -> None:
+    for i in get_all_stocksholder(id_stocks=id_stocks):
+        i = int(i)
+        qs = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=i, meaning_data=id_stocks, where_data='id_stocks', get_data='quantity_stocks')
+        new_relative_perc = qs * BotDB.get(table='stocks', key='percent_of_income', where='id_stocks AND seller', meaning=id_stocks)
+        update_2dot_data(table='users', key='briefcase', where='id_user', meaning=i, where_data='id_stocks', meaning_data=id_stocks, update_data='relative_perc', num=new_relative_perc)
 
 def update_rating_stocks(id_slot):
     rating = 0
@@ -986,7 +1024,6 @@ def update_rating_stocks(id_slot):
     BotDB.updateN(key='rating', where='id_slot',
                   meaning=id_slot, table='stocks', num=rating)
 
-def update_rating_stocks(id_slot):j
 
 def get_custom_number(num=0):
     tn = str(num)
@@ -1237,10 +1274,8 @@ def taG(len=10):
 # #########################################
 
 def emodziside(num):
-    plus = BotDB.get(key='text_box1', where='name',
-                     meaning='plus', table='value_main')
-    minus = BotDB.get(key='text_box1', where='name',
-                      meaning='minus', table='value_main')
+    plus = BotDB.get(key='text_box1', where='name', meaning='plus', table='value_main')
+    minus = BotDB.get(key='text_box1', where='name', meaning='minus', table='value_main')
     return plus if num > 0 else minus
 
 
@@ -1333,3 +1368,5 @@ def rent_office(id_company):
             y = False
 
     return round(total_rent, 2)
+
+

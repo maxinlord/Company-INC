@@ -4,7 +4,7 @@ from fractions import Fraction
 import time
 from decimal import *
 
-from all_function import isfloat, shell_num, update_price_stock
+from all_function import enable_split, get_all_stocksholder, isfloat, shell_num, update_price_stock, update_relative_perc_users
 
 a = Decimal('0.1233')
 b = Decimal('1000000000')
@@ -52,7 +52,11 @@ def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
         return '<code>{:,}</code>'.format(int(num))
     return f'<code>{num}</code>'
 
-print(float(Fraction(12, 123456789)))
+update_relative_perc_users(474701274)
+
+# print(len([]))
+
+# get_all_stocksholder(474701274)
 
 
 

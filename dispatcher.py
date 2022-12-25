@@ -2,9 +2,11 @@ import logging
 from aiogram import Bot, Dispatcher
 import config
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from db import BotDB
+from db import BotDB, path_db
 
-BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+BotDB = BotDB(path_db)
+# BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+# /Users/jcu/Documents/GitHub/Company-INC/server.db
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

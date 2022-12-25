@@ -1,8 +1,8 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from all_function import get_button
-from db import BotDB
+from db import BotDB, path_db
 
-BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+BotDB = BotDB(path_db)
 
 
 

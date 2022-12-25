@@ -1,5 +1,7 @@
 import sqlite3
 
+path_db = '/Users/jcu/Documents/GitHub/Company-INC/server.db'
+
 class BotDB:
 
     def __init__(self, db_file):

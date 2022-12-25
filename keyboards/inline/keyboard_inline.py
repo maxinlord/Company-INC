@@ -1,9 +1,9 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from db import BotDB
+from db import BotDB, path_db
 from aiogram.utils.callback_data import CallbackData
 from all_function import get_button, parse_2dot_data
 
-BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+BotDB = BotDB(path_db)
 
 
 # leftright = CallbackData('side','postfix', 'index')
@@ -211,6 +211,15 @@ def split_stocks():
         ]
     ])
     return split_stocks
+
+def poll_extend_stocks(id_stocks):
+    poll_extend_stocks =  InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_button('i3.2.4'), callback_data=f'stocks:poll:yes:{id_stocks}'), InlineKeyboardButton(text=get_button('i3.2.5'), callback_data=f'stocks:poll:no:{id_stocks}')
+        ]
+    ])
+    return poll_extend_stocks
+
 
 def confirm_extension():
     confirm_extension =  InlineKeyboardMarkup(inline_keyboard=[
