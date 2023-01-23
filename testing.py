@@ -1,10 +1,12 @@
 
 
 from fractions import Fraction
+from pprint import pprint
 import time
 from decimal import *
 
-from all_function import enable_split, get_all_stocksholder, isfloat, shell_num, update_price_stock, update_relative_perc_users
+from all_function import activate_item, deactivate_item, enable_split, finite_income, get_all_stocksholder, get_item_cost, get_item_param, get_item_param_viev, get_item_quantity, isfloat, shell_num, update_price_stock, update_relative_perc_users
+from keyboards.inline.keyboard_inline import create_items_keyboard
 
 a = Decimal('0.1233')
 b = Decimal('1000000000')
@@ -52,13 +54,104 @@ def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
         return '<code>{:,}</code>'.format(int(num))
     return f'<code>{num}</code>'
 
-update_relative_perc_users(474701274)
+# finite_income()
+# get_item_param('item_1')
+# get_item_cost('item_1')
+# print(get_item_param('item_1'))
+# n = 'nffnf'
+# print(n[0])
+# print(eval('2-0.2'))
 
-# print(len([]))
+# activate_item(474701274, 'item_2')
+# activate_item(474701274, 'item_1')
+# deactivate_item(474701274, 'item_2')
 
+# create_items_keyboard()
+print(get_item_param_viev('item_2'))
 # get_all_stocksholder(474701274)
 
+{operator_1}
+{num_1}
+{is_percent_1}
+{type_add}
+{name_value_1}
+{table_name_1}
+{where_name_1}
+{parse_1}
+{gd_1}
+{wd_1}
+{md_1}
+{cost_currency}
+{cost_num}
 
+def simple_num_fast(num: int):
+    n = num
+    a = list(range(n+1))
+    a[1] = 0
+    lst = {}
+
+    i = 2
+    t = 0
+    while i <= n:
+        if a[i] != 0:
+            t += 1
+            lst[t] = (a[i])
+            for j in range(i, n+1, i):
+                a[j] = 0
+        i += 1
+    return lst
+
+
+
+def simple_num(n):
+    l = list(range(2, n))
+    l2 = {}
+    t = 0
+    for ind, i in enumerate(l):
+        t += 1 
+        for x in l[ind+1:]:
+            if x%i!=0:
+                continue
+            l.pop(l.index(x))
+        # tab = ' ' * (5 - len(str(i)))
+        l2[t] = i
+    return l2
+        # print(i, end=f',{tab}')
+
+def difference(l: dict):
+    llen = len(l)
+    for ind in l:
+        # print(l[ind+1] - l[ind])
+        if ind+1 > llen:
+            break
+        x = l[ind+1] - l[ind]
+        if x >= 150:
+            print(f'{l[ind]}({x}) -> {l[ind+1]}', end=', ')
+
+# difference(simple_num_fast(100000000))
+
+def fun_(num):
+    start = num
+    step = 0
+    ls = [0]
+    while num != 1:
+        ls.append(num)
+        step += 1
+        if num % 2 == 0:
+            num = int(num/2)
+            continue
+        num = (num * 3) + 1
+    print(f'start -> {start}')
+    print(f'steps -> {step}')
+    print(f'max -> {max(ls)}', end='\n\n')
+
+# dd = simple_num_fast(1000)
+# for i in dd:
+#     fun_(dd[i])
+        
+# difference(simple_num())
+
+# pprint(l2, compact=True)
 
 
 # id_user = 474701274

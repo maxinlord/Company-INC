@@ -1004,11 +1004,12 @@ def get_your_stocks(id_user):
 
 
 def update_relative_perc_users(id_stocks) -> None:
+    id_s = str(id_stocks)
     for i in get_all_stocksholder(id_stocks=id_stocks):
         i = int(i)
-        qs = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=i, meaning_data=id_stocks, where_data='id_stocks', get_data='quantity_stocks')
-        new_relative_perc = qs * BotDB.get(table='stocks', key='percent_of_income', where='id_stocks AND seller', meaning=id_stocks)
-        update_2dot_data(table='users', key='briefcase', where='id_user', meaning=i, where_data='id_stocks', meaning_data=id_stocks, update_data='relative_perc', num=new_relative_perc)
+        qs = get_2dot_data(table='users', key='briefcase', where='id_user', meaning=i, meaning_data=id_s, where_data='id_stocks', get_data='quantity_stocks')
+        new_relative_perc = qs * BotDB.get(table='stocks', key='percent_of_income', where='id_stocks AND seller', meaning=id_s)
+        update_2dot_data(table='users', key='briefcase', where='id_user', meaning=i, where_data='id_stocks', meaning_data=id_s, update_data='relative_perc', num=new_relative_perc)
 
 def update_rating_stocks(id_slot):
     rating = 0
@@ -1273,6 +1274,150 @@ def taG(len=10):
 
 # #########################################
 
+
+def get_item_param(item_name: str):
+    params = parse_2dot_data(key='param', where='name', meaning=item_name, table='items')[1:]
+    type_add = BotDB.get(key='type_add', where='name', meaning=item_name, table='items')
+    _ = []
+    for i in params:
+        d = {
+            'operator_with_num': f'{i[0]}{i[2]}',
+            'is_percent': i[1],
+            'type_add': type_add,
+            'name_value': i[3],
+            'table_name': i[4],
+            'where_name': i[5],
+            'parse': i[6],
+            'gd': i[7],
+            'wd': i[8],
+            'md': str(i[9])
+            }
+        _.append(d)
+    return _
+
+def get_item_param_viev(item_name: str):
+    params = parse_2dot_data(key='param', where='name', meaning=item_name, table='items')
+    type_add = BotDB.get(key='type_add', where='name', meaning=item_name, table='items')
+    cost = parse_2dot_data(key='cost', where='name', meaning=item_name, table='items')[1:][0]
+    d = {'type_add': type_add,
+         'cost_currency': cost[0],
+         'cost_num': shell_num(cost[1])}
+    for y in range(len(params[0])):
+        for i in range(1, len(params)): #without header
+            if params[0][y] == 'is_percent' and params[i][y] == 'T':
+                old_num = params[i][y+1]
+                params[i][y+1] = round(old_num - 1, 2)
+            d[f'{params[0][y]}_{i}'] = params[i][y]
+    return d
+
+def get_item_cost(item_name: str):
+    cost = parse_2dot_data(key='cost', where='name', meaning=item_name, table='items')[1:]
+    return cost[0][0], cost[0][1]
+
+def get_item_quantity(item_name: str):
+    return BotDB.get(key='quantity', where='name', meaning=item_name, table='items')
+
+# def create_items_keyboard():
+#     items = BotDB.get_alls(table='items', keys='*')
+    
+
+def activate_item(id_user, item_name: str):
+    params = get_item_param(item_name=item_name)
+    for i in params:
+        n = i['operator_with_num']
+        if i['type_add'] == 'once':
+            if i['parse'] == 'F':
+                old_n = BotDB.get(table=i['table_name'], key=i['name_value'], where=i['where_name'], meaning=id_user)
+                BotDB.updateN(table=i['table_name'], key=i['name_value'], where=i['where_name'], meaning=id_user, num=eval(f'{old_n}{n}'))
+            elif i['parse'] == 'T':
+                old_n = get_2dot_data(table=i['table_name'], key=i['name_value'], where=i['where_name'], meaning=id_user, where_data=i['wd'], meaning_data=i['md'], get_data=i['gd'])
+                update_2dot_data(table=i['table_name'], key=i['name_value'], where=i['where_name'], meaning=id_user, where_data=i['wd'], meaning_data=i['md'], update_data=i['gd'], num=eval(f'{old_n}{n}'))
+            
+            delete_2dot_data(table='users', key='items', where='id_user', meaning=id_user, unique_value_data=item_name)
+            
+            
+        elif i['type_add'] == 'ever':
+            w = Weight(id_user)
+            name_weight = i['name_value']
+            ratio_old, plus_old = w.get_weight(name_weight=name_weight)
+            if n[0] in '+-':
+                w.update_weightP(name_weight=name_weight, wPlus=round(eval(f'{plus_old}{n}'), 2))
+            elif n[0] == '*':
+                w.update_weightR(name_weight=name_weight, wRatio=round(eval(f'{ratio_old}{n}'), 2))
+            
+            update_2dot_data(table='users', key='items', where='id_user', meaning=id_user, where_data='item_name', meaning_data=item_name, update_data='activated', num=1)
+            # if i['parse'] == 'T':
+            #     if n[0] in '+-':
+            #         w.update_weightP(name_weight=name_weight, wPlus=eval(f'{plus_old}{n}'))
+            #     if n[0] == '*':
+            #         w.update_weightR(name_weight=name_weight, wRatio=eval(f'{ratio_old}{n}'))  
+
+# operator:num:name_value:table_name:where_name:parse:gd:wd:md,*:1.2:percent_bank:-:-:F:-:-:-,
+
+def deactivate_item(id_user, item_name: str):
+    params = get_item_param(item_name=item_name)
+    for i in params:
+        operator = i['operator_with_num'][0]
+        w = Weight(id_user)
+        name_weight = i['name_value']
+        ratio_old, plus_old = w.get_weight(name_weight=name_weight)
+        n_inverse = inverse_operator(operator) + i['operator_with_num'][1:]
+        if operator in '+-':
+            w.update_weightP(name_weight=name_weight, wPlus=round(eval(f'{plus_old}{n_inverse}'), 2))
+        if operator == '*':
+            w.update_weightR(name_weight=name_weight, wRatio=round(eval(f'{ratio_old}{n_inverse}'), 2))
+
+    update_2dot_data(table='users', key='items', where='id_user', meaning=id_user, where_data='item_name', meaning_data=item_name, update_data='activated', num=0)
+
+def inverse_operator(operator):
+    if operator == '+':
+        return '-'
+    elif operator == '-':
+        return '+'
+    elif operator == '*':
+        return '/'
+    elif operator == '/':
+        return '*'
+    else:
+        return 'Invalid operator'
+
+
+class Weight:
+    def __init__(self, id_user: int) -> None:
+        self.id: int = id_user
+        self.wNum: tuple[Union[int, float], Union[int, float]] = None
+
+    def get_weight(self, name_weight: str):
+        if self.weight_exist(name_weight):
+            return self.wNum
+        self.add_weight(name_weight=name_weight, wRatio=1, wPlus=0)
+        return (1, 0)
+
+    def weight_exist(self, name_weight: str) -> bool:
+        ratio = get_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
+                              where_data='name_weight', meaning_data=name_weight, get_data='wRatio')
+        plus = get_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
+                             where_data='name_weight', meaning_data=name_weight, get_data='wPlus')
+        if ratio:
+            self.wNum = (ratio, plus)
+            return True
+        return False
+
+    def add_weight(self, name_weight: str, wRatio: Union[int, float], wPlus: Union[int, float]) -> None:
+        create_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
+                         d=[name_weight, wRatio, wPlus])
+
+    def update_weightR(self, name_weight: str, wRatio: Union[int, float]) -> None:
+        update_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
+                         where_data='name_weight', meaning_data=name_weight, update_data='wRatio', num=wRatio)
+
+    def update_weightP(self, name_weight: str, wPlus: Union[int, float]) -> None:
+        update_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
+                         where_data='name_weight', meaning_data=name_weight, update_data='wPlus', num=wPlus)
+
+
+# #########################################
+
 def emodziside(num):
     plus = BotDB.get(key='text_box1', where='name', meaning='plus', table='value_main')
     minus = BotDB.get(key='text_box1', where='name', meaning='minus', table='value_main')
@@ -1297,10 +1442,12 @@ def get_text(unique_name, d=None, format=True) -> str:
 
 async def verify():
     data = BotDB.get_alls('id_user, referrer, count_tap, date_reg, verify')
+    condition_verify_count_tap = BotDB.vCollector(table='value_main', where='name', meaning='condition_verify_count_tap')
+    condition_verify_count_play_day = BotDB.vCollector(table='value_main', where='name', meaning='condition_verify_count_play_day')
     for i in data:
-        verife_date = datetime.datetime.now() > datetime.datetime.strptime(i[3], '%H:%M:%S %m/%d/%Y') + datetime.timedelta(days=3)
+        verife_date = datetime.datetime.now() > datetime.datetime.strptime(i[3], '%H:%M:%S %m/%d/%Y') + datetime.timedelta(days=condition_verify_count_play_day)
 
-        if i[1] != 0 and i[2] >= 50 and verife_date and i[4] == 0:
+        if i[1] != 0 and i[2] >= condition_verify_count_tap and verife_date and i[4] == 0:
             award_referral = BotDB.vCollector(wNum=get_weight(i[0], 'award_referral'), table='value_main', where='name',
                                               meaning='award_referral')
             award_referrer = BotDB.vCollector(wNum=get_weight(i[1], 'award_referrer'), table='value_main', where='name',
@@ -1308,7 +1455,7 @@ async def verify():
             # обновляем статус верификации
             BotDB.updateN(key='verify', where='id_user', meaning=i[0], num=1)
             # отправляем сообщение пользователю о том, что он прошел верефикацию успешно
-            await bot.send_message(i[0], get_text('verify_ referral', format=False))
+            await bot.send_message(i[0], get_text('verify_referral', format=False))
             # начисляем бонус за положительный статус верификации реффералу
             BotDB.add(key='usd', where='id_user',
                       meaning=i[0], num=award_referral)
@@ -1320,22 +1467,42 @@ async def verify():
 
 
 def income_dev_software(id_company: int) -> Union[int, float]:
-    app_income = sum(
-        [i[1] for i in BotDB.get_alls(keys='id_company, income, done', table='dev_software_apps') if i[0] == id_company and i[2] == 1])
+    app_income = sum(i[1] for i in BotDB.get_alls(keys='id_company, income, done', table='dev_software_apps') if i[0] == id_company and i[2] == 1)
     dev_income = 0
     device_k = create_mat_percents(id_company)
-    own_base_income = BotDB.vCollector(wNum=get_weight(id_company, f'own_base_income'), table='value_it', where='name',
-                                       meaning=f'own_base_income')
+    own_base_income = BotDB.vCollector(wNum=get_weight(id_company, 'own_base_income'), table='value_it', where='name', meaning='own_base_income')
+
 
     for j in range(1, 3 + 1):
         for i in count_percent_device(device_k, id_company, viev=False):
-            income_one_dev = BotDB.vCollector(wNum=get_weight(id_company, f'income_dev_{j}'), table='value_it',
-                                              where='name', meaning=f'income_dev_{j}')
-            dev_income += ((1 + i['percent']) * income_one_dev) * \
-                i['quantity_same_percent'] if i['dev'] == j else 0
+            income_one_dev = BotDB.vCollector(wNum=get_weight(id_company, f'income_dev_{j}'), table='value_it', where='name', meaning=f'income_dev_{j}')
+            dev_income += ((1 + i['percent']) * income_one_dev) * i['quantity_same_percent'] if i['dev'] == j else 0
 
-    income = app_income + dev_income + own_base_income
-    return income
+    return app_income + dev_income + own_base_income
+
+def income_calc(id_company):
+    base_income = income_dev_software(id_company)
+    _ = get_2dot_data
+    try:
+        sum_perc = sum(_(table='users', key='briefcase', where='id_user', meaning=i, meaning_data=str(id_company), where_data='id_stocks', get_data='relative_perc') for i in get_all_stocksholder(id_company))
+        income_stockholder = round(base_income * sum_perc, 2)
+    except Exception:
+        income_stockholder = 0
+    try:
+        my_briefcase = parse_2dot_data(table='users', key='briefcase', where='id_user', meaning=id_company)[1:]
+        income_my = sum(round(i[-1] * income_dev_software(i[1]), 2) for i in my_briefcase)
+    except Exception:
+        income_my = 0
+    return base_income, income_stockholder, income_my
+
+def finite_income():
+    companys = BotDB.get_all(key='id_company', table='dev_software')
+    for id_company in companys:
+        base_income, income_stockholder, income_my = income_calc(id_company)
+        finite_income = base_income - income_stockholder + income_my
+        # print(base_income, income_stockholder, income_my, finite_income, sep=' | ')
+        BotDB.add(key='rub', where='id_user', meaning=id_company, num=finite_income)
+
 
 
 def salary_dev(id_company):

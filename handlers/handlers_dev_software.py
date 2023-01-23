@@ -12,8 +12,7 @@ from aiogram.types import CallbackQuery
 from aiogram.types.input_media import InputMediaPhoto
 from all_function import *
 from all_states import *
-from classes import DevSoftware, Weight
-
+from classes import DevSoftware
 
 
 @dp.message_handler(Text(equals=get_button('*1')), state=company_dev_software.Q1)

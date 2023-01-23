@@ -11,7 +11,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from all_function import *
 from all_states import *
-from classes import DevSoftware, User, Weight
+from classes import DevSoftware, User
 from dispatcher import BotDB, bot, dp
 from keyboards.default import keyboard_default
 from keyboards.inline import keyboard_inline
@@ -957,9 +957,12 @@ def company_keyboard(id_user):
     keyboard = keyboard_default.company_dev_software()
     if type_of_activity == 'dev_software':
         user = DevSoftware(id_user)
+        income = income_calc(user.user.id)
         d = {
             'name_company': user.user.company_name,
-            'income': shell_num(income_dev_software(id_user)),
+            'base_income': shell_num(income[0]),
+            'stock_income': shell_num(income[2]),
+            'stock_holder_income': shell_num(income[1]),
             'expense': shell_num(salary_dev(id_user)),
             'count_place': shell_num(user.quantity_all_places),
             'count_dev': shell_num(user.quantity_all_devs),
@@ -1001,6 +1004,59 @@ async def setting(message: Message):
     await message.answer(get_text('setting', format=False), reply_markup=keyboard_default.user_setting(quantity_changes_name=user.amount_of_changes_nickname, number_of_requests=user.number_of_requests))
 
 # ######
+
+@dp.message_handler(Text(equals=get_button('10.1')))
+@tech_break()
+@ban()
+@error_reg()
+@last_tap('-')
+async def shop_items(message: Message):
+    user = User(message.from_user.id)
+    items_keyboard = keyboard_inline.create_items_keyboard()
+    await message.answer(get_text('shop_items', format=False), reply_markup=items_keyboard) 
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_name')
+@last_tap_call('-')
+async def discription_item(call: CallbackQuery):
+    item_name = call.data.split(':')[1]
+    params = get_item_param_viev(item_name=item_name)
+    description = get_text(f'{item_name}_description', d=params)
+    await bot.edit_message_text(text=description, chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.item_menu(item_name=item_name))
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item' and call.data.split(':')[1] == 'back')
+@last_tap_call('-')
+async def item_back(call: CallbackQuery):
+    items_keyboard = keyboard_inline.create_items_keyboard()
+    await bot.edit_message_text(text=get_text('shop_items', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=items_keyboard)
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item' and call.data.split(':')[1] == 'buy')
+@last_tap_call('-')
+async def item_buy(call: CallbackQuery):
+    user = User(call.from_user.id)
+    item_name = call.data.split(':')[-1]
+    cost_currency, cost_num = parse_2dot_data(key='cost', where='name', meaning=item_name, table='items')[1:][0] 
+    user_account = BotDB.get(key=cost_currency, where='id_user', meaning=user.id)
+    user_items = parse_2dot_data(key='items', where='id_user', meaning=user.id, table='users')[1:]
+    user_has_item = [True for i in user_items if item_name in i]
+    if user_account - cost_num < 0:
+        await call.answer(text=get_text('item_buy.condition.1'), show_alert=True)
+        return
+    if user_has_item:
+        await call.answer(text=get_text('item_buy.condition.2'), show_alert=True)
+        return
+    num = user_account - cost_num
+    BotDB.updateN(key=cost_currency, where='id_user', meaning=user.id, num=num)
+    create_2dot_data(table='users', key='items', where='id_user', meaning=user.id, d=[item_name, 0])
+    
+    await bot.edit_message_text(text=get_text('item_bought', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=None)
+    items_keyboard = keyboard_inline.create_items_keyboard()
+    await bot.send_message(chat_id=call.from_user.id, text=get_text('shop_items', format=False), reply_markup=items_keyboard)  
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item' and call.data.split(':')[1] == 'back')
+@last_tap_call('-')
+async def item_back(call: CallbackQuery):
+    items_keyboard = keyboard_inline.create_items_keyboard()
+    await bot.edit_message_text(text=get_text('shop_items', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=items_keyboard)
 
 @dp.message_handler(Text(contains=get_button('10.2').split(' ')[0]))
 @tech_break()

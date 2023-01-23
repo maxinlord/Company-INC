@@ -278,5 +278,21 @@ def all_voting_company(id_company):
     all_voting_company = InlineKeyboardMarkup(row_width=2)
     for i in parse_2dot_data(table='value_main', key='text_box1', where='name', meaning='all_companys')[1:]:
         all_voting_company.insert(InlineKeyboardButton(text=i[0], callback_data=f'trends:{i[1]}'))
-    all_voting_company.add(InlineKeyboardButton(text=get_button('i6.1.2'), callback_data=f'trends:back'))
+    all_voting_company.add(InlineKeyboardButton(text=get_button('i6.1.2'), callback_data='trends:back'))
     return all_voting_company
+
+def item_menu(item_name):
+    item_menu =  InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_button('i10.1.0'), callback_data=f'item:buy:{item_name}'), InlineKeyboardButton(text=get_button('*1'), callback_data=f'item:back')
+        ]
+    ])
+    return item_menu
+
+def create_items_keyboard():
+    items = BotDB.get_all(table='items', key='name')
+    items_keyboard = InlineKeyboardMarkup()
+    for i in items:
+        name_button = get_button(f'i10.1.{i[-1]}')
+        items_keyboard.insert(InlineKeyboardButton(text=name_button, callback_data=f'item_name:{i}'))
+    return items_keyboard

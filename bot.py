@@ -4,7 +4,7 @@ import time
 import aioschedule
 from aiogram import executor
 
-from all_function import (check_apps_done, income_dev_software, rate_currency, rent_office,
+from all_function import (check_apps_done, finite_income, income_dev_software, rate_currency, rent_office,
                           salary_dev, update_price_stock, verify)
 from dispatcher import BotDB, dp
 from handlers import *
@@ -18,8 +18,7 @@ async def job_minute():
     if date[2] == '00':
         rate_currency()
         await verify()
-        [BotDB.add(key='rub', where='id_user', meaning=i, num=income_dev_software(i)) for i in
-         BotDB.get_all('id_company', 'dev_software')]
+        finite_income()
         check_apps_done()
 
 

@@ -1,9 +1,8 @@
 
-from typing import Union
 
 
 from dispatcher import BotDB
-from all_function import create_2dot_data, parse_2dot_data, get_2dot_data, update_2dot_data
+from all_function import parse_2dot_data, get_2dot_data, Weight
 
 
 class User:
@@ -166,35 +165,4 @@ class DevSoftware:
         return places
 
 
-class Weight:
-    def __init__(self, id_user: int) -> None:
-        self.id: int = id_user
-        self.wNum: tuple[Union[int, float], Union[int, float]] = None
 
-    def get_weight(self, name_weight: str):
-        if self.weight_exist(name_weight):
-            return self.wNum
-        self.add_weight(name_weight=name_weight, wRatio=1, wPlus=0)
-        return (1, 0)
-
-    def weight_exist(self, name_weight: str) -> bool:
-        ratio = get_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
-                              where_data='name_weight', meaning_data=name_weight, get_data='wRatio')
-        plus = get_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
-                             where_data='name_weight', meaning_data=name_weight, get_data='wPlus')
-        if ratio:
-            self.wNum = (ratio, plus)
-            return True
-        return False
-
-    def add_weight(self, name_weight: str, wRatio: Union[int, float], wPlus: Union[int, float]) -> None:
-        create_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
-                         d=[name_weight, wRatio, wPlus])
-
-    def update_weightR(self, name_weight: str, wRatio: Union[int, float]) -> None:
-        update_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
-                         where_data='name_weight', meaning_data=name_weight, update_data='wRatio', num=wRatio)
-
-    def update_weightP(self, name_weight: str, wPlus: Union[int, float]) -> None:
-        update_2dot_data(table='weights', key='user_weights', where='id_user', meaning=self.id,
-                         where_data='name_weight', meaning_data=name_weight, update_data='wPlus', num=wPlus)
