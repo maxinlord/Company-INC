@@ -1,0 +1,72 @@
+{'ts': '20230128T02:12:02.033447', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:02.036026', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '1', 'table': 'button_name'}, 'r': 'Профиль'}
+{'ts': '20230128T02:12:26.801644', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.804644', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '1', 'table': 'button_name'}, 'r': 'Профиль'}
+{'ts': '20230128T02:12:26.806643', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.809640', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '2', 'table': 'button_name'}, 'r': 'Банк'}
+{'ts': '20230128T02:12:26.812639', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.814637', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '3', 'table': 'button_name'}, 'r': 'Акции'}
+{'ts': '20230128T02:12:26.816636', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.818635', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '3.2', 'table': 'button_name'}, 'r': 'Мои акции'}
+{'ts': '20230128T02:12:26.823632', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.826630', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '3.1', 'table': 'button_name'}, 'r': 'Биржа'}
+{'ts': '20230128T02:12:26.829630', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.832627', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '3.3', 'table': 'button_name'}, 'r': 'Мой портфель'}
+{'ts': '20230128T02:12:26.835625', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.837626', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '5', 'table': 'button_name'}, 'r': 'Тренды'}
+{'ts': '20230128T02:12:26.840622', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.842622', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '6', 'table': 'button_name'}, 'r': 'Рефералы'}
+{'ts': '20230128T02:12:26.844620', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.846619', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '7', 'table': 'button_name'}, 'r': 'Бонус'}
+{'ts': '20230128T02:12:26.848618', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.851616', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8', 'table': 'button_name'}, 'r': 'Компания'}
+{'ts': '20230128T02:12:26.854615', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.856613', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '9', 'table': 'button_name'}, 'r': 'Forbes'}
+{'ts': '20230128T02:12:26.859611', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.861610', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '10', 'table': 'button_name'}, 'r': 'Опции'}
+{'ts': '20230128T02:12:26.865608', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.867607', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '10.1', 'table': 'button_name'}, 'r': 'Магазин'}
+{'ts': '20230128T02:12:26.870605', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.872605', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '10.2', 'table': 'button_name'}, 'r': 'Поменять псевдоним {qcn}'}
+{'ts': '20230128T02:12:26.875602', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.877601', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '10.3', 'table': 'button_name'}, 'r': 'Обратиться в поддержку {nofr}'}
+{'ts': '20230128T02:12:26.880600', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.882599', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '1', 'table': 'button_name'}, 'r': ' Назад'}
+{'ts': '20230128T02:12:26.886596', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.888595', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '1', 'table': 'button_name'}, 'r': ' Назад'}
+{'ts': '20230128T02:12:26.891593', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.893592', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8.1', 'table': 'button_name'}, 'r': 'Сделать приложение'}
+{'ts': '20230128T02:12:26.897590', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.899588', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8.2', 'table': 'button_name'}, 'r': 'Открыть data centre'}
+{'ts': '20230128T02:12:26.902588', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.904586', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8.3', 'table': 'button_name'}, 'r': 'Маркетинговое исследование'}
+{'ts': '20230128T02:12:26.907584', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.909582', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8.4', 'table': 'button_name'}, 'r': 'Нанять программистов'}
+{'ts': '20230128T02:12:26.913580', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.915579', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8.6', 'table': 'button_name'}, 'r': 'КупляАренда здания'}
+{'ts': '20230128T02:12:26.919578', 'f': 'get', 'k': {'key': 'text_box1', 'where': 'name', 'meaning': 'program_mode_for_text', 'table': 'value_main'}, 'r': 'off'}
+{'ts': '20230128T02:12:26.921576', 'f': 'get', 'k': {'key': 'name', 'where': 'number', 'meaning': '8.5', 'table': 'button_name'}, 'r': 'Оборудование'}
+{'ts': '20230128T02:13:00.581596', 'f': 'get', 'k': {'key': 'average_percent_influences', 'where': 'id_user', 'meaning': 922153291, 'table': 'users'}, 'r': 'id:currency:min:percent'}
+{'ts': '20230128T02:13:00.590588', 'f': 'get', 'k': {'key': 'average_percent_influences', 'where': 'id_user', 'meaning': 474701274, 'table': 'users'}, 'r': 'id:currency:min:percent'}
+{'ts': '20230128T02:13:00.596585', 'f': 'get', 'k': {'key': 'average_percent_influences', 'where': 'id_user', 'meaning': 1458391985, 'table': 'users'}, 'r': 'id:currency:min:percent'}
+{'ts': '20230128T02:13:00.665544', 'f': 'get', 'k': {'key': 'quantity_device_1', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.668542', 'f': 'get', 'k': {'key': 'quantity_dev_1', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 10}
+{'ts': '20230128T02:13:00.669543', 'f': 'get', 'k': {'key': 'quantity_dev_2', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 0}
+{'ts': '20230128T02:13:00.671541', 'f': 'get', 'k': {'key': 'quantity_dev_3', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 0}
+{'ts': '20230128T02:13:00.673540', 'f': 'get', 'k': {'table': 'dev_software', 'key': 'quantity_device_2', 'where': 'id_company', 'meaning': 474701274}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.676538', 'f': 'get', 'k': {'key': 'quantity_device_2', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.678537', 'f': 'get', 'k': {'key': 'quantity_dev_1', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 10}
+{'ts': '20230128T02:13:00.680536', 'f': 'get', 'k': {'key': 'quantity_dev_2', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 0}
+{'ts': '20230128T02:13:00.683534', 'f': 'get', 'k': {'key': 'quantity_dev_3', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 0}
+{'ts': '20230128T02:13:00.685532', 'f': 'get', 'k': {'table': 'dev_software', 'key': 'quantity_device_3', 'where': 'id_company', 'meaning': 474701274}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.687531', 'f': 'get', 'k': {'key': 'quantity_device_3', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.689531', 'f': 'get', 'k': {'key': 'quantity_dev_1', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 10}
+{'ts': '20230128T02:13:00.816125', 'f': 'get', 'k': {'key': 'average_percent_influences', 'where': 'id_user', 'meaning': 922153291, 'table': 'users'}, 'r': 'id:currency:min:percent'}
+{'ts': '20230128T02:13:00.821126', 'f': 'get', 'k': {'key': 'average_percent_influences', 'where': 'id_user', 'meaning': 474701274, 'table': 'users'}, 'r': 'id:currency:min:percent'}
+{'ts': '20230128T02:13:00.828119', 'f': 'get', 'k': {'key': 'average_percent_influences', 'where': 'id_user', 'meaning': 1458391985, 'table': 'users'}, 'r': 'id:currency:min:percent'}
+{'ts': '20230128T02:13:00.889083', 'f': 'get', 'k': {'key': 'quantity_device_1', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.893081', 'f': 'get', 'k': {'key': 'quantity_dev_1', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 10}
+{'ts': '20230128T02:13:00.895079', 'f': 'get', 'k': {'key': 'quantity_dev_2', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 0}
+{'ts': '20230128T02:13:00.897078', 'f': 'get', 'k': {'key': 'quantity_dev_3', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 0}
+{'ts': '20230128T02:13:00.902076', 'f': 'get', 'k': {'table': 'dev_software', 'key': 'quantity_device_2', 'where': 'id_company', 'meaning': 474701274}, 'r': 'lvl:quantity,1:0'}
+{'ts': '20230128T02:13:00.905074', 'f': 'get', 'k': {'key': 'quantity_device_2', 'where': 'id_company', 'meaning': 474701274, 'table': 'dev_software'}, 'r': 'lvl:quantity,1:0'}

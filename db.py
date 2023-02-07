@@ -1,6 +1,41 @@
+
 import sqlite3
 
-path_db = '/Users/jcu/Documents/GitHub/Company-INC/server.db'
+
+path_db_for_mac = '/Users/jcu/Documents/GitHub/Company-INC/server.db'
+path_db = 'C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db'
+
+
+# def clean_string(input):
+#     return re.sub(r"[^\w{}:.,_ =']", "", input)
+
+# def event_sourced(fn):
+#     @wraps(fn)
+#     def wrapper(*args, **kwargs):
+#         # Execute the function and get the result
+#         result = fn(*args, **kwargs)
+        
+#         # Get the current time
+#         now = datetime.datetime.now()
+        
+#         # Get the event data
+#         event_data = {
+#             'ts': now.isoformat(),
+#             'f': fn.__name__,
+#             # 'args': args,
+#             'k': kwargs,
+#             'r': result 
+#         }
+#         text = clean_string(f'{event_data}')
+#         with open('event_log.txt', 'a') as event_log:
+#             event_log.write(text)
+#             event_log.write('\n')
+#         # Append the event to the event log
+#         # with open('even_log.json', 'w') as json_file:
+#         #     json.dump(event_data, json_file, indent=4, ensure_ascii=True)
+        
+#         return fn(*args, **kwargs)
+#     return wrapper
 
 class BotDB:
 
@@ -61,7 +96,8 @@ class BotDB:
         result = self.cur.execute(f"""SELECT {key} FROM {table} WHERE {where} = '{meaning}'""")
         self.cur.execute(f"""UPDATE {table} SET {key} = {num + result.fetchone()[0]} WHERE {where} = '{meaning}'""")
         return self.conn.commit()
-
+    
+    # @event_sourced
     def get(self, key, where, meaning, table='users'):
         '''Позволяет получить любое значение из БД'''
         result = self.cur.execute(f"""SELECT {key} FROM {table} WHERE {where} = '{meaning}'""")

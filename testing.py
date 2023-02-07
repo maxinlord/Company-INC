@@ -2,10 +2,11 @@
 
 from fractions import Fraction
 from pprint import pprint
+import re
 import time
 from decimal import *
 
-from all_function import activate_item, deactivate_item, enable_split, finite_income, get_all_stocksholder, get_item_cost, get_item_param, get_item_param_viev, get_item_quantity, isfloat, shell_num, update_price_stock, update_relative_perc_users
+from all_function import activate_item, deactivate_item, enable_split, finite_income, get_all_stocksholder, get_inventory_with_items, get_item_cost, get_item_param, get_item_param_viev, get_item_quantity, isfloat, shell_num, update_price_stock, update_relative_perc_users
 from keyboards.inline.keyboard_inline import create_items_keyboard
 
 a = Decimal('0.1233')
@@ -20,10 +21,40 @@ def ttime(func):
         print(time.time() - t1)
     return wrapper
 
-def moneyfmt(value, places=2, curr='', sep=',', dp='.', pos='', neg='-', trailneg=''):
-    q = Decimal(10) ** -places 
+
+def filter_text(text):
+    return re.findall(r'[^\w\s_\-\u0400-\u04FF\U0001f600-\U0001f64f]+', text)
+
+print(filter_text(' '))
+
+def moneyfmt(value, places=2, curr='', sep=',', dp='.',
+             pos='', neg='-', trailneg=''):
+    """Convert Decimal to a money formatted string.
+
+    places:  required number of places after the decimal point
+    curr:    optional currency symbol before the sign (may be blank)
+    sep:     optional grouping separator (comma, period, space, or blank)
+    dp:      decimal point indicator (comma or period)
+             only specify as blank when places is zero
+    pos:     optional sign for positive numbers: '+', space or blank
+    neg:     optional sign for negative numbers: '-', '(', space or blank
+    trailneg:optional trailing minus indicator:  '-', ')', space or blank
+
+    >>> d = Decimal('-1234567.8901')
+    >>> moneyfmt(d, curr='$')
+    '-$1,234,567.89'
+    >>> moneyfmt(d, places=0, sep='.', dp='', neg='', trailneg='-')
+    '1.234.568-'
+    >>> moneyfmt(d, curr='$', neg='(', trailneg=')')
+    '($1,234,567.89)'
+    >>> moneyfmt(Decimal(123456789), sep=' ')
+    '123 456 789.00'
+    >>> moneyfmt(Decimal('-0.02'), neg='<', trailneg='>')
+    '<0.02>'
+
+    """
+    q = Decimal(10) ** -places      # 2 places --> '0.01'
     sign, digits, exp = value.quantize(q).as_tuple()
-    print(sign, digits)
     result = []
     digits = list(map(str, digits))
     build, next = result.append, digits.pop
@@ -44,7 +75,42 @@ def moneyfmt(value, places=2, curr='', sep=',', dp='.', pos='', neg='-', trailne
             build(sep)
     build(curr)
     build(neg if sign else pos)
-    return ''.join(reversed(result)).strip('.00')
+    num = ''.join(reversed(result))
+    return Decimal(num).from_float.normalize()
+    # return ''.join(reversed(result))
+
+
+def remove_trailing_zeros_decimal(num):
+    return Decimal(num).normalize()
+
+# def money_format(num, currency="$"):
+#     return "{:,.2f} {}".format(Decimal(num), currency)
+
+# def money_format(num, currency="$"):
+#     num = Decimal(num).quantize(Decimal('1.'))
+#     print(num)
+#     return "{:,.2f} {}".format(num, currency)
+
+# def money_format2(num, currency="$"):
+#     if isinstance(num, str) and num.endswith('.00'):
+#         return "{} {}".format(num, currency)
+#     num = Decimal(num).quantize(Decimal('1.'))
+#     return "{:,.2f} {}".format(num, currency)
+
+
+def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
+    if not signs:
+         return f'<code>{num}</code>'
+    num = round(num, q_signs_after_comma)
+    if float(num) % 1 != 0:
+        return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
+    return '<code>{:,}</code>'.format(int(num))
+   
+
+
+# print(money_format2(1000.00))
+# # print(remove_trailing_zeros_decimal(Decimal('1000.00')))
+# # print(moneyfmt(Decimal(1000.1)))
 
 def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
     if signs:
@@ -61,28 +127,30 @@ def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
 # n = 'nffnf'
 # print(n[0])
 # print(eval('2-0.2'))
-
+# get_inventory_with_items(474701274)
 # activate_item(474701274, 'item_2')
 # activate_item(474701274, 'item_1')
 # deactivate_item(474701274, 'item_2')
 
 # create_items_keyboard()
-print(get_item_param_viev('item_2'))
+# print(get_item_param_viev('item_2'))
 # get_all_stocksholder(474701274)
 
-{operator_1}
-{num_1}
-{is_percent_1}
-{type_add}
-{name_value_1}
-{table_name_1}
-{where_name_1}
-{parse_1}
-{gd_1}
-{wd_1}
-{md_1}
-{cost_currency}
-{cost_num}
+# operator:is_percent:num:name_value:table_name:where_name:parse:gd:wd:md,*:T:1.05:usd:users:id_user:F:-:-:-,
+
+# {operator_1}
+# {num_1}
+# {is_percent_1}
+# {type_add}
+# {name_value_1}
+# {table_name_1}
+# {where_name_1}
+# {parse_1}
+# {gd_1}
+# {wd_1}
+# {md_1}
+# {cost_currency}
+# {cost_num}
 
 def simple_num_fast(num: int):
     n = num

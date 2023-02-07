@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from db import BotDB, path_db
 from aiogram.utils.callback_data import CallbackData
-from all_function import get_button, parse_2dot_data
+from all_function import emodzi_active_item, get_button, get_inventory_with_items, get_text, parse_2dot_data
 
 BotDB = BotDB(path_db)
 
@@ -281,18 +281,56 @@ def all_voting_company(id_company):
     all_voting_company.add(InlineKeyboardButton(text=get_button('i6.1.2'), callback_data='trends:back'))
     return all_voting_company
 
-def item_menu(item_name):
+def item_shop_menu(item_name):
     item_menu =  InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text=get_button('i10.1.0'), callback_data=f'item:buy:{item_name}'), InlineKeyboardButton(text=get_button('*1'), callback_data=f'item:back')
+            InlineKeyboardButton(text=get_button('i10.1.0'), callback_data=f'item_shop:buy:{item_name}'), InlineKeyboardButton(text=get_button('*1'), callback_data=f'item_shop:back')
         ]
     ])
     return item_menu
 
 def create_items_keyboard():
-    items = BotDB.get_all(table='items', key='name')
+    items = BotDB.get_alls(table='items', keys='name, type_add')
     items_keyboard = InlineKeyboardMarkup()
     for i in items:
-        name_button = get_button(f'i10.1.{i[-1]}')
-        items_keyboard.insert(InlineKeyboardButton(text=name_button, callback_data=f'item_name:{i}'))
+        if i[1] == 'once':
+            continue
+        name_button = get_text(f'{i[0]}_name', format=False)
+        items_keyboard.insert(InlineKeyboardButton(text=name_button, callback_data=f'item_shop_name:{i[0]}'))
     return items_keyboard
+
+def create_inventory_items_keyboard(id_user):
+    items = get_inventory_with_items(id_user)
+    items_keyboard = InlineKeyboardMarkup(row_width=1)
+    for i in items:
+        status = items[i]['activated']
+        name_button = items[i]['item_name'] + ' ' + emodzi_active_item(status)
+        
+        items_keyboard.insert(InlineKeyboardButton(text=name_button, callback_data=f'item_inventory_name:{i}:activated:{status}'))
+    return items_keyboard
+
+
+def item_inventory_menu(item_name, activated):
+    activated = str(activated)
+    items_keyboard = InlineKeyboardMarkup(row_width=1)
+    if activated == '0':
+        items_keyboard.insert(InlineKeyboardButton(text=get_button('activated.name_to_change!'), callback_data=f'item_inventory_adg:activated:{item_name}'))
+    elif activated == '1': 
+        items_keyboard.insert(InlineKeyboardButton(text=get_button('deactivated.name_to_change!'), callback_data=f'item_inventory_adg:deactivated:{item_name}'))
+    elif activated == '2':
+        items_keyboard.insert(InlineKeyboardButton(text=get_button('gift.name_to_change!'), callback_data=f'item_inventory_adg:gift:{item_name}'))
+
+    items_keyboard.insert(InlineKeyboardButton(text=get_button('*1'), callback_data=f'item_inventory:back'))
+    return items_keyboard
+
+
+def item_inventory_gift_menu(item_name):
+    item_menu_gift =  InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_button('gift.name_to_change!'), callback_data=f'item_menu_gift:{item_name}')
+        ],
+        [
+             InlineKeyboardButton(text=get_button('*1'), callback_data=f'item_inventory:back')
+        ]
+    ])
+    return item_menu_gift

@@ -391,7 +391,7 @@ def get_button(unique_number, d=None, format=False) -> str:
                          meaning=unique_number, table='button_name')
     except:
         BotDB.add_new_button(unique_number)
-        text = BotDB.get(key='name', where='name',
+        text = BotDB.get(key='name', where='number',
                          meaning=unique_number, table='button_name')
     text_true = text.format(**d) if format else text
     return f'({unique_number})\n\n{text_true}' if mode == 'on' else text_true
@@ -649,7 +649,7 @@ def clean_error_reg_company(id_user):
         BotDB.delete(where='id_company', meaning=id_user,
                      table=BotDB.get(key='type_of_activity', where='id_user', meaning=id_user))
     except Exception as e:
-        print(e)
+        pass
 
 
 def check_emptys(id_user):
@@ -819,19 +819,19 @@ def check_nickname(nickname):
 
 
 def clean_nickname(nickname):
-    nickname = re.sub("[!\"#$%&'()*+,./\\\:;<=>?@[\]^`{|}~]", '', nickname)
-    nickname = re.sub('[^\x00-\x7Fа-яА-ЯёЁ]', '', nickname)
-    return nickname
+    # nickname = re.sub("[!\"#$%&'()*+,./\\\:;<=>?@[\]^`{|}~]", '', nickname)
+    # nickname = re.sub('[^\x00-\x7Fа-яА-ЯёЁ]', '', nickname)
+    return re.sub(r'[^\w\s_\-\u0400-\u04FF\U0001f600-\U0001f64f]+', '', nickname)
 
 
 def check_on_simbols(nickname):
-    try:
-        nickname1 = re.findall(
-            "[!\"#$%&'()*+,./\\\:;<=>?@[\]^`{|}~]", nickname)
-        nickname2 = re.findall('[^\x00-\x7Fа-яА-ЯёЁ]', nickname)
-        return len(nickname1) + len(nickname2)
-    except:
-        pass
+        _ = re.findall(r'[^\w\s_\-\u0400-\u04FF\U0001f600-\U0001f64f]+', nickname)
+        # nickname1 = re.findall(
+        #     "[!\"#$%&'()*+,./\\\:;<=>?@[\]^`{|}~]", nickname)
+        # nickname2 = re.findall('[^\x00-\x7Fа-яА-ЯёЁ]', nickname)
+        return len(_)
+
+
 
 
 # #########################################
@@ -1108,14 +1108,22 @@ def available(id_user: int, price_item: Union[int, float], currency: str = 'rub'
 
 # #########################################
 
-def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
-    if signs:
-        num = round(num, q_signs_after_comma)
-        if isfloat(str(num)) and float(num) % 1 != 0:
-            return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
-        return '<code>{:,}</code>'.format(int(num))
-    return f'<code>{num}</code>'
+# def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True) -> str:
+#     if signs:
+#         num = round(num, q_signs_after_comma)
+#         if isfloat(str(num)) and float(num) % 1 != 0:
+#             return '<code>{:,.{}f}</code>'.format(float(num), q_signs_after_comma)
+#         return '<code>{:,}</code>'.format(int(num))
+#     return f'<code>{num}</code>'
 
+
+def shell_num(num, q_signs_after_comma: int = 2, signs: bool = True, format: str = 'code') -> str:
+    if not signs:
+         return f'<{format}>{num}</{format}>'
+    num = round(num, q_signs_after_comma)
+    if float(num) % 1 != 0:
+        return '<{ft}>{:,.{}f}</{ft}>'.format(float(num), q_signs_after_comma, ft=format)
+    return '<{ft}>{:,}</{ft}>'.format(int(num), ft=format)
 
 def cleannum(numb: str) -> str:
     numb = re.sub("[!\"#$%&'()*+,/\\\:;<=>?@[\]^`{|}~]", '', numb)
@@ -1299,9 +1307,11 @@ def get_item_param_viev(item_name: str):
     params = parse_2dot_data(key='param', where='name', meaning=item_name, table='items')
     type_add = BotDB.get(key='type_add', where='name', meaning=item_name, table='items')
     cost = parse_2dot_data(key='cost', where='name', meaning=item_name, table='items')[1:][0]
+    quantity_items = BotDB.get(table='items', key='quantity', where='name', meaning=item_name)
     d = {'type_add': type_add,
          'cost_currency': cost[0],
-         'cost_num': shell_num(cost[1])}
+         'cost_num': shell_num(cost[1]),
+         'quantity_items': shell_num(quantity_items)}
     for y in range(len(params[0])):
         for i in range(1, len(params)): #without header
             if params[0][y] == 'is_percent' and params[i][y] == 'T':
@@ -1369,6 +1379,20 @@ def deactivate_item(id_user, item_name: str):
 
     update_2dot_data(table='users', key='items', where='id_user', meaning=id_user, where_data='item_name', meaning_data=item_name, update_data='activated', num=0)
 
+def have_activated_item(id_user):
+    items = parse_2dot_data(key='items', where='id_user', meaning=id_user, table='users')[1:]
+    quantity_active_items = BotDB.vCollector(table='value_main', where='name', meaning='quantity_active_items')
+    return sum(i[1] for i in items) >= quantity_active_items
+
+
+def get_inventory_with_items(id_user):
+    items = parse_2dot_data(table='users', key='items', where='id_user', meaning=id_user)[1:]
+    d = {}
+    for i in items:
+        item_name = get_text(f'{i[0]}_name', format=False)
+        d[i[0]] = {'item_name': item_name, 'activated': i[1]}
+    return d
+
 def inverse_operator(operator):
     if operator == '+':
         return '-'
@@ -1422,6 +1446,15 @@ def emodziside(num):
     plus = BotDB.get(key='text_box1', where='name', meaning='plus', table='value_main')
     minus = BotDB.get(key='text_box1', where='name', meaning='minus', table='value_main')
     return plus if num > 0 else minus
+
+def emodzi_active_item(num=0):
+    activated_e = BotDB.get(key='text_box1', where='name', meaning='activated_item_status', table='value_main')
+    deactivated_e = BotDB.get(key='text_box1', where='name', meaning='deactivated_item_status', table='value_main')
+    gift = BotDB.get(key='text_box1', where='name', meaning='gift_item_status', table='value_main')
+    if num == 2:
+        return gift
+    return activated_e if num > 0 else deactivated_e
+
 
 
 def get_text(unique_name, d=None, format=True) -> str:

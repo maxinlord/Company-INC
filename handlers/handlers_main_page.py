@@ -15,6 +15,7 @@ from classes import DevSoftware, User
 from dispatcher import BotDB, bot, dp
 from keyboards.default import keyboard_default
 from keyboards.inline import keyboard_inline
+from aiogram.types import BotCommand
 
 # #########################################
 
@@ -38,7 +39,6 @@ async def start_menu(message: Message, state: FSMContext):
                 BotDB.updateN(key='referrer', where='id_user', meaning=id_user, num=id_referrer)
         except Exception as e:
             pass
-        
         # проверяем пользователя на наличие username
         username = message.from_user.mention
 
@@ -1005,6 +1005,62 @@ async def setting(message: Message):
 
 # ######
 
+@dp.message_handler(Command('inventory'))
+@tech_break()
+@ban()
+@error_reg()
+@last_tap('-')
+async def inventory_viev(message: Message):
+    id_user = message.from_user.id
+    await message.answer(get_text('inventory_viev', format=False), reply_markup=keyboard_inline.create_inventory_items_keyboard(id_user))
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_inventory_name')
+@last_tap_call('-')
+async def discription_inventory_item(call: CallbackQuery):
+    item_name = call.data.split(':')[1]
+    status = call.data.split(':')[-1]
+    params = get_item_param_viev(item_name=item_name)
+    description = get_text(f'{item_name}_description', d=params)
+    text_template_page = get_text('template_item_inventory_page', d={'description': description})
+    keyboard = keyboard_inline.item_inventory_menu(item_name=item_name, activated=status)
+    await bot.edit_message_text(text=text_template_page, chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard)
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_inventory' and call.data.split(':')[1] == 'back')
+@last_tap_call('-')
+async def item_inventory_back(call: CallbackQuery):
+    id_user = call.from_user.id
+    items_keyboard = keyboard_inline.create_inventory_items_keyboard(id_user=id_user)
+    await bot.edit_message_text(text=get_text('inventory_viev', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=items_keyboard)
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_inventory_adg')
+@last_tap_call('-')
+async def item_is_adg(call: CallbackQuery):
+    id_user = call.from_user.id
+    call_data = call.data.split(':')
+    if call_data[1]== 'deactivated':
+        deactivate_item(id_user=id_user, item_name=call_data[2])
+        status = 0
+    
+    elif call_data[1] == 'activated':
+        if have_activated_item(id_user):
+            return await call.answer(get_text('have_activated_item.condition', format=False), show_alert=True)
+        status = 1
+        activate_item(id_user=id_user, item_name=call_data[2])
+    elif call_data[1] == 'gift':
+        activate_item(id_user=id_user, item_name=call_data[2])
+        return await item_inventory_back(call=call)
+    keyboard = keyboard_inline.item_inventory_menu(item_name=call_data[2], activated=status)
+    await bot.edit_message_reply_markup(chat_id=id_user, message_id=call.message.message_id, reply_markup=keyboard)
+
+# @dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_inventory_gift')
+# @last_tap_call('-')
+# async def item_is_gift(call: CallbackQuery):
+#     pass
+
+
+
+# ######
+
 @dp.message_handler(Text(equals=get_button('10.1')))
 @tech_break()
 @ban()
@@ -1015,39 +1071,47 @@ async def shop_items(message: Message):
     items_keyboard = keyboard_inline.create_items_keyboard()
     await message.answer(get_text('shop_items', format=False), reply_markup=items_keyboard) 
 
-@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_name')
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_shop_name')
 @last_tap_call('-')
 async def discription_item(call: CallbackQuery):
     item_name = call.data.split(':')[1]
     params = get_item_param_viev(item_name=item_name)
     description = get_text(f'{item_name}_description', d=params)
-    await bot.edit_message_text(text=description, chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.item_menu(item_name=item_name))
+    text_template_page = get_text('template_item_shop_page', d={'description': description})
+    await bot.edit_message_text(text=text_template_page, chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=keyboard_inline.item_shop_menu(item_name=item_name))
 
-@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item' and call.data.split(':')[1] == 'back')
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_shop' and call.data.split(':')[1] == 'back')
 @last_tap_call('-')
 async def item_back(call: CallbackQuery):
     items_keyboard = keyboard_inline.create_items_keyboard()
     await bot.edit_message_text(text=get_text('shop_items', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=items_keyboard)
 
-@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item' and call.data.split(':')[1] == 'buy')
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'item_shop' and call.data.split(':')[1] == 'buy')
 @last_tap_call('-')
 async def item_buy(call: CallbackQuery):
     user = User(call.from_user.id)
     item_name = call.data.split(':')[-1]
-    cost_currency, cost_num = parse_2dot_data(key='cost', where='name', meaning=item_name, table='items')[1:][0] 
+    quantity_items = BotDB.get(table='items', key='quantity', where='name', meaning=item_name)
+    cost_currency, cost_num = parse_2dot_data(key='cost', where='name', meaning=item_name, table='items')[1:][0]
     user_account = BotDB.get(key=cost_currency, where='id_user', meaning=user.id)
     user_items = parse_2dot_data(key='items', where='id_user', meaning=user.id, table='users')[1:]
-    user_has_item = [True for i in user_items if item_name in i]
-    if user_account - cost_num < 0:
+    if user_has_item := [True for i in user_items if item_name in i]:
         await call.answer(text=get_text('item_buy.condition.1'), show_alert=True)
         return
-    if user_has_item:
+    if quantity_items <= 0:
+        await call.answer(text=get_text('item_buy.condition.3'), show_alert=True)
+        return
+    if user_account - cost_num < 0:
         await call.answer(text=get_text('item_buy.condition.2'), show_alert=True)
         return
+    
     num = user_account - cost_num
+    q_items = quantity_items - 1
+    BotDB.updateN(table='items', key='quantity', where='name', meaning=item_name, num=q_items)
     BotDB.updateN(key=cost_currency, where='id_user', meaning=user.id, num=num)
     create_2dot_data(table='users', key='items', where='id_user', meaning=user.id, d=[item_name, 0])
-    
+
     await bot.edit_message_text(text=get_text('item_bought', format=False), chat_id=call.from_user.id, message_id=call.message.message_id, reply_markup=None)
     items_keyboard = keyboard_inline.create_items_keyboard()
     await bot.send_message(chat_id=call.from_user.id, text=get_text('shop_items', format=False), reply_markup=items_keyboard)  
@@ -1213,6 +1277,22 @@ async def answer_button1(message: Message, state: FSMContext):
 
 # ######
 
+@dp.message_handler(Command('upcommand'))
+async def tetst(message: Message):
+    print('command update done!')
+    commands = (
+    ('start', 'начало работы с ботом'),
+    ('help', 'поможет тебе'),
+    ('inventory', 'твой инвентарь предметов'),
+    ('faq', 'руководство по игре'))
+    l = [BotCommand(command=i[0], description=i[1]) for i in commands]
+    await bot.set_my_commands(l)
+
+@dp.message_handler(Command('test'))
+async def tetst(message: Message):
+    await message.answer(get_text('start_menu1', format=False), reply_markup=ReplyKeyboardRemove())
+
+
 @dp.message_handler(Text(equals=get_button('*1')))
 @tech_break()
 @ban()
@@ -1233,9 +1313,8 @@ async def back(message: Message):
 # async def anytext(poll_answer: types.PollAnswer):
 #     pprint((poll_answer.poll_id))
 
-# @dp.message_handler(Command('Test'))
-# async def tetst(message: Message):
-#     await bot.pin_chat_message(chat_id=message.from_user.id, message_id=message.message_id)
+
+
 
 
 
