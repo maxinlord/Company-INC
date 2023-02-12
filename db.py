@@ -2,8 +2,9 @@
 import sqlite3
 
 
-path_db_for_mac = '/Users/jcu/Documents/GitHub/Company-INC/server.db'
-path_db = 'C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db'
+# path_db_for_mac = '/Users/jcu/Documents/GitHub/Company-INC/server.db'
+# path_db = 'C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db'
+path_db = 'server.db'
 
 
 # def clean_string(input):
@@ -40,17 +41,23 @@ path_db = 'C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db'
 class BotDB:
 
     def __init__(self, db_file):
+        self.db_file = db_file
         self.conn = sqlite3.connect(db_file)
         self.cur = self.conn.cursor()
+    
+    def create_connection(self):
+        new_conn = sqlite3.connect(self.db_file)
+        new_cur = new_conn.cursor()
+        return new_conn, new_cur
 
     def user_exists(self, id_user):
         """Проверяем, есть ли юзер в базе"""
         result = self.cur.execute("SELECT `id_user` FROM `users` WHERE `id_user` = ?", (id_user,))
         return bool(len(result.fetchall()))
     
-    def get_user_referals(self,id_user):
+    def get_user_referals(self, id_user):
         '''Получаем кортеж состоящий из ([список], кол-во) рефералов юзера'''
-        result = [i[0] for i in self.cur.execute(f'SELECT username FROM users WHERE referrer = "{id_user}"')]
+        result = [i[0] for i in self.cur.execute("SELECT username FROM users WHERE referrer = (?)", (id_user))]
         return (result, len(result))
 
     def add_new_text(self, name):
@@ -90,61 +97,77 @@ class BotDB:
         self.cur.execute("INSERT INTO stocks (id_slot, seller, id_stocks, quantity_stocks, percent_of_income, currency) VALUES (?, ?, ?, ?, ?, ?)", (id_slot, seller, id_stocks, quantity_stocks, percent_of_income, currency))
 
         return self.conn.commit()
+    
+    # def get_tables_name(self):
+    #     result = self.cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    #     return result.fetchone()[0]
+    # def add(self, key, where, meaning, table='users', num=0):
+    #     '''Добавляем любое значение к числу в БД'''
+    #     result = self.cur.execute(f"""SELECT {key} FROM {table} WHERE {where} = '{meaning}'""")
+    #     self.cur.execute(f"""UPDATE {table} SET {key} = {num + result.fetchone()[0]} WHERE {where} = '{meaning}'""")
+    #     return self.conn.commit()
 
     def add(self, key, where, meaning, table='users', num=0):
         '''Добавляем любое значение к числу в БД'''
-        result = self.cur.execute(f"""SELECT {key} FROM {table} WHERE {where} = '{meaning}'""")
-        self.cur.execute(f"""UPDATE {table} SET {key} = {num + result.fetchone()[0]} WHERE {where} = '{meaning}'""")
+        query = f"SELECT {key} FROM {table} WHERE {where} = ?"
+        result = self.cur.execute(query, (meaning,))
+        query = f"UPDATE {table} SET {key} = ? WHERE {where} = ?"
+        self.cur.execute(query, (num + result.fetchone()[0], meaning))
         return self.conn.commit()
+
     
     # @event_sourced
+    # def get(self, key, where, meaning, table='users'):
+    #     '''Позволяет получить любое значение из БД'''
+    #     result = self.cur.execute(f"""SELECT {key} FROM {table} WHERE {where} = '{meaning}'""")
+    #     return result.fetchone()[0]
     def get(self, key, where, meaning, table='users'):
-        '''Позволяет получить любое значение из БД'''
-        result = self.cur.execute(f"""SELECT {key} FROM {table} WHERE {where} = '{meaning}'""")
+        '''Get any value from the database'''
+        result = self.cur.execute(f"SELECT {key} FROM {table} WHERE {where} = ?", (meaning,))
         return result.fetchone()[0]
+
     
     def get_all(self, key, table='users'):
-        '''Позволяет получить любые значение из БД'''
         result = self.cur.execute(f"""SELECT {key} FROM {table}""")
         result = list(map(lambda x: x[0], result.fetchall()))
         return result  
     
     def get_alls(self, keys, table='users'):
-        '''Позволяет получить любые значение из БД'''
         result = self.cur.execute(f"""SELECT {keys} FROM {table}""")
         return result.fetchall()  
 
     def get_alls_with_order(self, keys, order, table='users'):
-        '''Позволяет получить любые значение из БД'''
         result = self.cur.execute(f"""SELECT {keys} FROM {table} ORDER BY {order} DESC""")
         return result.fetchall()  
 
     def delete(self, where, meaning, table='users'):
-        '''Позволяет удалить любые значение из БД'''
-        self.cur.execute(f'DELETE FROM {table} WHERE {where} = "{meaning}"')
+        self.cur.execute(f'DELETE FROM {table} WHERE {where} = ?', (meaning,))
         return self.conn.commit()
 
     def updateT(self, key, where, meaning, table='users', text=''):
-        '''Позволяет обновить любой текст в БД'''
-        self.cur.execute(f"""UPDATE {table} SET {key} = '{text}' WHERE {where} = '{meaning}'""")
+        self.cur.execute(f'UPDATE {table} SET {key} = "{text}" WHERE {where} = ?', (meaning,))
         return self.conn.commit()
    
     def updateN(self, key, where, meaning, table='users', num=0):
         '''Позволяет обновить любое число в БД'''
-        self.cur.execute(f"""UPDATE {table} SET {key} = {num} WHERE {where} = '{meaning}'""")
+        self.cur.execute(f'UPDATE {table} SET {key} = {num} WHERE {where} = ?', (meaning,))
         return self.conn.commit()
 
     def vCollector(self, table, where, meaning, wNum=(1, 0), perc=False, mn=False) -> float:
-        ratio = self.cur.execute(f"""SELECT ratio FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
-        main_num = self.cur.execute(f"""SELECT main_num FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
-        plus_num = self.cur.execute(f"""SELECT plus_num FROM {table} WHERE {where} = '{meaning}'""").fetchone()[0]
+        ratio_query = f"SELECT ratio FROM {table} WHERE {where} = ?"
+        main_num_query = f"SELECT main_num FROM {table} WHERE {where} = ?"
+        plus_num_query = f"SELECT plus_num FROM {table} WHERE {where} = ?"
+
+        ratio = self.cur.execute(ratio_query, (meaning,)).fetchone()[0]
+        main_num = self.cur.execute(main_num_query, (meaning,)).fetchone()[0]
+        plus_num = self.cur.execute(plus_num_query, (meaning,)).fetchone()[0]
+        
         unique_ratio, unique_plus = wNum
-        i = 100 if perc == True else 1
+        i = 100 if perc else 1
         return ((unique_ratio - 1) + ratio) * main_num + ((plus_num + unique_plus) / i)
 
-
-    def close(self):
+    def close(self, conn):
         """Закрываем соединение с БД"""
-        self.connection.close()
+        conn.close()
 
 

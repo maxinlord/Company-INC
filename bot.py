@@ -51,7 +51,7 @@ async def scheduler():
     aioschedule.every(1).seconds.do(job_minute)
     aioschedule.every(1).seconds.do(job_hour)
     aioschedule.every(1).seconds.do(job_sec)
-    while True:
+    while True: 
         await aioschedule.run_pending()
         await asyncio.sleep(0.1)
 

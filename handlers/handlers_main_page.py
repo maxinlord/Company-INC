@@ -7,7 +7,7 @@ from pprint import pprint
 from aiogram import Bot
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Command, Text
-from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove, ContentType
 
 from all_function import *
 from all_states import *
@@ -16,6 +16,7 @@ from dispatcher import BotDB, bot, dp
 from keyboards.default import keyboard_default
 from keyboards.inline import keyboard_inline
 from aiogram.types import BotCommand
+
 
 # #########################################
 
@@ -68,7 +69,7 @@ async def q1(message: Message):
         await message.answer(get_text('q1_1', format=False))
     elif check_on_simbols(message.text) > 0:
         await message.answer(get_text('q1_2', format=False))
-    elif check_nickname(message.text):
+    elif check_nickname(message.from_user.id, message.text):
         await message.answer(get_text('q1_3', format=False))
     else:
         # запись nickname(псевдонима)
@@ -1153,7 +1154,7 @@ async def change_nickname2(message: Message, state: FSMContext):
         await message.answer(get_text('q1_1', d={'word': message.text, 'length_word': length_word}))
     elif check_on_simbols(message.text) > 0:
         await message.answer(get_text('q1_2', format=False))
-    elif check_nickname(message.text):
+    elif check_nickname(user.id, message.text):
         await message.answer(get_text('q1_3', format=False))
     else:
         async with state.proxy() as data:
@@ -1252,7 +1253,6 @@ async def answer_button1(message: Message, state: FSMContext):
         await bot.send_message(id_chat_support, info_message, reply_markup=keyboard_inline.i_am_take(teg))
         # отправляем сообщение ответчику
         await message.answer(get_text('answer_button1.1',format=False), reply_markup=keyboard_default.main_page())
-        await state.finish()
     else:
         user_message = BotDB.get(key='message', where='tag', meaning=teg, table='message_in_support')
         d = {
@@ -1273,7 +1273,8 @@ async def answer_button1(message: Message, state: FSMContext):
             }
         # отправляем в чат тех. поддержки всю информацию о вопросе и ответе, юзере и админе
         await bot.send_message(id_chat_support, get_text('answer_button1.4',format=True, d=d))
-        await state.finish()
+
+    await state.finish()
 
 # ######
 
@@ -1288,9 +1289,32 @@ async def tetst(message: Message):
     l = [BotCommand(command=i[0], description=i[1]) for i in commands]
     await bot.set_my_commands(l)
 
-@dp.message_handler(Command('test'))
-async def tetst(message: Message):
-    await message.answer(get_text('start_menu1', format=False), reply_markup=ReplyKeyboardRemove())
+@dp.message_handler(Command('get_file'))
+async def get_file(message: Message):
+    if message.get_args() == '7777':
+        await message.answer(get_text('files', format=False), reply_markup=keyboard_inline.get_files_k()) 
+    # get_xlsx_table(BotDB.conn, 'users')
+    # await message.answer_document(document=open('users.xlsx', 'rb'))
+
+@dp.callback_query_handler(lambda call: call.data.split(':')[0] == 'name_table')
+async def answer_button(call: CallbackQuery, state: FSMContext):
+    name_table = call.data.split(':')[1]
+    get_xlsx_table(BotDB.conn, f'{name_table}')
+    await bot.send_document(call.from_user.id, document=open(f'{name_table}.xlsx', 'rb'))
+
+@dp.message_handler(content_types=ContentType.DOCUMENT)
+async def handle_docs(message: Message):
+    file_name = message.document.file_name
+    if is_xlsx_extend(file_name) and message.from_user.id == 474701274:
+        BotDB.close(BotDB.conn)
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        await bot.download_file(file.file_path, f'{file_name}')
+        conn, cur = BotDB.create_connection()
+        write_excel_to_db(excel_file=file_name, conn=conn)
+        BotDB.conn, BotDB.cur = conn, cur
+        return await message.answer(get_text('handle_docs.done', format=False))
+    await message.answer(get_text('handle_docs.error', format=False))
 
 
 @dp.message_handler(Text(equals=get_button('*1')))

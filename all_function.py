@@ -1,3 +1,4 @@
+import csv
 import datetime
 from decimal import Decimal
 import random
@@ -11,6 +12,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.types import ReplyKeyboardRemove
+import pandas as pd
 
 from all_states import Ban_User, Tech_Break
 from dispatcher import bot, BotDB
@@ -292,34 +294,33 @@ def quantity_devices(id_company):
 
 
 def create_mat_percents(id_company):
-    i = 1
-    ind = 1
-    y = True
     devices_k = []
-    while y:
-        q_device = parse_2dot_data(key=f'quantity_device_{ind}', where='id_company', meaning=id_company,
-                                   table='dev_software')[1:]
-        q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i
-                  in range(1, 3 + 1)]
+    ind = 1
+    while True:
+        q_device = parse_2dot_data(
+            key=f'quantity_device_{ind}', 
+            where='id_company', 
+            meaning=id_company,
+            table='dev_software'
+        )[1:]
+        q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i in range(1, 4)]
         for i in q_device:
             s = []
             true_q_device = i[1]
-            if i[0] > 1:
-                u = sum(q_device[t - 1][1] for t in range(1, i[0]))
-                s = [0] * u + s
-            elif i[1] == 0:
-                continue
+            u = sum(d[1] for d in q_device[:i[0]-1])
+            s = [0] * u + s
+
             for j in q_devs:
                 if j == 0:
                     continue
-                elif i[1] >= j:
+                if i[1] >= j:
                     s += [1] * j
-                    i[1] = i[1] - j
+                    i[1] -= j
                     q_devs[q_devs.index(j)] = 0
-                elif i[1] <= j:
+                else:
                     s += [1] * i[1]
                     i[1] = 0
-                    q_devs[q_devs.index(j)] = j - i[1]
+                    q_devs[q_devs.index(j)] -= i[1]
                     s += [0] * (quantity_devs_company(id_company) - len(s))
                     break
             i[1] = true_q_device
@@ -329,9 +330,51 @@ def create_mat_percents(id_company):
             BotDB.get(table='dev_software',
                       key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
         except:
-            y = False
-    # pprint(devices_k, width=300)
+            break
     return devices_k
+
+
+# def create_mat_percents(id_company):
+#     i = 1
+#     ind = 1
+#     y = True
+#     devices_k = []
+#     while y:
+#         q_device = parse_2dot_data(key=f'quantity_device_{ind}', where='id_company', meaning=id_company,
+#                                    table='dev_software')[1:]
+#         q_devs = [BotDB.get(key=f'quantity_dev_{i}', where='id_company', meaning=id_company, table='dev_software') for i
+#                   in range(1, 3 + 1)]
+#         for i in q_device:
+#             s = []
+#             true_q_device = i[1]
+#             if i[0] > 1:
+#                 u = sum(q_device[t - 1][1] for t in range(1, i[0]))
+#                 s = [0] * u + s
+#             elif i[1] == 0:
+#                 continue
+#             for j in q_devs:
+#                 if j == 0:
+#                     continue
+#                 elif i[1] >= j:
+#                     s += [1] * j
+#                     i[1] = i[1] - j
+#                     q_devs[q_devs.index(j)] = 0
+#                 elif i[1] <= j:
+#                     s += [1] * i[1]
+#                     i[1] = 0
+#                     q_devs[q_devs.index(j)] = j - i[1]
+#                     s += [0] * (quantity_devs_company(id_company) - len(s))
+#                     break
+#             i[1] = true_q_device
+#             devices_k.append([f'{ind}_{i[0]}'] + s)
+#         try:
+#             ind += 1
+#             BotDB.get(table='dev_software',
+#                       key=f'quantity_device_{ind}', where='id_company', meaning=id_company)
+#         except:
+#             y = False
+#     # pprint(devices_k, width=300)
+#     return devices_k
 
 
 def count_percent_device(device_k, id_company, viev=True):
@@ -814,8 +857,12 @@ def tech_break_call(state=False):
 # #########################################
 
 
-def check_nickname(nickname):
-    return nickname in BotDB.get_all('nickname')
+def check_nickname(id_user, nickname):
+    for i in BotDB.get_alls('id_user, nickname'):
+        if i[0] == id_user:
+            continue
+        if i[1] == nickname:
+            return True
 
 
 def clean_nickname(nickname):
@@ -1478,6 +1525,8 @@ async def verify():
     condition_verify_count_tap = BotDB.vCollector(table='value_main', where='name', meaning='condition_verify_count_tap')
     condition_verify_count_play_day = BotDB.vCollector(table='value_main', where='name', meaning='condition_verify_count_play_day')
     for i in data:
+        if i[3] is None:
+            continue
         verife_date = datetime.datetime.now() > datetime.datetime.strptime(i[3], '%H:%M:%S %m/%d/%Y') + datetime.timedelta(days=condition_verify_count_play_day)
 
         if i[1] != 0 and i[2] >= condition_verify_count_tap and verife_date and i[4] == 0:
@@ -1570,3 +1619,22 @@ def rent_office(id_company):
     return round(total_rent, 2)
 
 
+def get_xlsx_table(conn, table_name):
+
+    # Write each table to a separate worksheet in the Excel file
+    with pd.ExcelWriter(f"{table_name}.xlsx") as writer:
+        df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
+        df.to_excel(writer, sheet_name=table_name, index=False)
+
+def write_excel_to_db(excel_file, conn):
+    # Read the data from the Excel file
+    with pd.ExcelFile(excel_file) as xlsx:
+        sheets = xlsx.sheet_names
+        dfs = {sheet: xlsx.parse(sheet) for sheet in sheets}
+
+    # Write each worksheet in the Excel file to a separate table in the database
+    for sheet_name, df in dfs.items():
+        df.to_sql(sheet_name, conn, if_exists="replace", index=False)
+
+def is_xlsx_extend(file_name: str):
+    return file_name.split('.')[1] == 'xlsx'

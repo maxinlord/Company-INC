@@ -1,12 +1,16 @@
 
 
+import csv
 from fractions import Fraction
 from pprint import pprint
 import re
+import sqlite3
 import time
 from decimal import *
+import pandas as pd
 
-from all_function import activate_item, deactivate_item, enable_split, finite_income, get_all_stocksholder, get_inventory_with_items, get_item_cost, get_item_param, get_item_param_viev, get_item_quantity, isfloat, shell_num, update_price_stock, update_relative_perc_users
+from all_function import activate_item, check_nickname, deactivate_item, enable_split, finite_income, get_all_stocksholder, get_inventory_with_items, get_item_cost, get_item_param, get_item_param_viev, get_item_quantity, isfloat, shell_num, update_price_stock, update_relative_perc_users
+from db import BotDB
 from keyboards.inline.keyboard_inline import create_items_keyboard
 
 a = Decimal('0.1233')
@@ -25,7 +29,34 @@ def ttime(func):
 def filter_text(text):
     return re.findall(r'[^\w\s_\-\u0400-\u04FF\U0001f600-\U0001f64f]+', text)
 
-print(filter_text(' '))
+# print(filter_text(' '))
+# print(check_nickname(474701274, 'кусь'))
+
+
+
+
+def write_table_to_csv(conn, table_name, csv_file):
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table_name}")
+    rows = cursor.fetchall()
+    with open(csv_file, 'w', encoding='utf-8', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([i[0] for i in cursor.description]) # write header
+        writer.writerows(rows)
+
+def get_csv_file(path, table_name):
+    # conn = sqlite3.connect('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+    conn = sqlite3.connect(path)
+    write_table_to_csv(conn, table_name, f'{table_name}.csv')
+    conn.close()
+    
+def get_xlsx_table(conn, table_name):
+
+    # Write each table to a separate worksheet in the Excel file
+    with pd.ExcelWriter(f"{table_name}.xlsx") as writer:
+        df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
+        df.to_excel(writer, sheet_name=table_name, index=False)
+
 
 def moneyfmt(value, places=2, curr='', sep=',', dp='.',
              pos='', neg='-', trailneg=''):
@@ -772,7 +803,7 @@ def fun_(num):
 
 
 
-# BotDB = BotDB('/Users/jcu/Desktop/MyProjects/Company INC/server.db')
+# BotDB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
 # # l = list(map(lambda x: x[0],BotDB.get_all('usd')))
 
 # s = 'Разработка ПО, dev_software, Создание игр, dev_game, Фермерство, farming, Одежда и обувь, clothing_and_shoes, Производство автомобилей, car_production, Производство телефонов, phone_production, Продукты питания, creating_food, Ресторан, restaurant, Салон красоты, beauty_salon, С.Т.О, tss, Адвокатское агенство, law_agency, Частная клиника, private_clinic, Производство топлива, fuel_production, Добыча нефти, oil_production'
@@ -823,6 +854,13 @@ def fun_(num):
 # @updown
 # def main():
 #     print('main')
+
+
+DB = BotDB('C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db')
+print(DB.get_tables_name())
+# DB.close()
+# print(DB.conn)
+
 
 
 # main()

@@ -1,4 +1,5 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import pandas as pd
 from db import BotDB, path_db
 from aiogram.utils.callback_data import CallbackData
 from all_function import emodzi_active_item, get_button, get_inventory_with_items, get_text, parse_2dot_data
@@ -334,3 +335,10 @@ def item_inventory_gift_menu(item_name):
         ]
     ])
     return item_menu_gift
+
+def get_files_k():
+    table_names = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", BotDB.conn)
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    for table in table_names['name']:  
+        keyboard.insert(InlineKeyboardButton(text=table, callback_data=f'name_table:{table}'))
+    return keyboard

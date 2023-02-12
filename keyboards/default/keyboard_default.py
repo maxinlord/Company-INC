@@ -46,13 +46,7 @@ def fields():
         keyboard=[
             [
                 KeyboardButton(text=get_button('f1')),
-                KeyboardButton(text=get_button('f2'))
-            ],
-            [
-                KeyboardButton(text=get_button('f3'))
-            ],
-            [
-                KeyboardButton(text=get_button('f4'))
+                # KeyboardButton(text=get_button('f2'))
             ]
         ],
         resize_keyboard=True
@@ -65,13 +59,7 @@ def types_it():
         keyboard=[
             [
                 KeyboardButton(text=get_button('f1.1'))
-            ],
-            [
-                KeyboardButton(text=get_button('f1.2'))
-            ],
-            [
-                KeyboardButton(text=get_button('*1'))
-            ],
+            ]
         ],
         resize_keyboard=True
     )

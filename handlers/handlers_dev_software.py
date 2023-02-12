@@ -837,7 +837,7 @@ async def buy_device2(message: Message, state: FSMContext):
         await company_dev_software.Q1.set()    
     elif cleannum(message.text).isdigit():
         cleannums = cleannum(message.text)
-        if user.quantity_devices - int(cleannums) >= 0:
+        if quantity_devs_company(user.user.id) - int(cleannums) >= 0:
             data = await state.get_data()
             index = data.get('index')
             dic = data.get('l')
