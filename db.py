@@ -4,7 +4,7 @@ import sqlite3
 
 # path_db_for_mac = '/Users/jcu/Documents/GitHub/Company-INC/server.db'
 # path_db = 'C:\\Users\\Admin\Desktop\\MyProjects\\Company INC\\server.db'
-path_db = 'server.db'
+path_db = 'my_bot/Company-INC/server.db'
 
 
 # def clean_string(input):
